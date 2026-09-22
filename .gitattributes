@@ -1,0 +1,31 @@
+# Auto-detectar archivos de texto y normalizar saltos de línea a LF en el repositorio
+* text=auto
+
+# Archivos de código y marcado (forzar LF o normalización automática)
+*.cs text diff=csharp
+*.axaml text
+*.xaml text
+*.xml text
+*.json text
+*.config text
+*.props text
+*.targets text
+*.sln text eol=crlf
+*.csproj text
+
+# Archivos de scripts específicos de plataforma
+*.sh text eol=lf
+*.bat text eol=crlf
+*.cmd text eol=crlf
+*.ps1 text eol=crlf
+
+# Binarios e imágenes (no alterar saltos de línea)
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.ico binary
+*.dll binary
+*.pdb binary
+*.exe binary
+*.ttf binary
+*.otf binary
