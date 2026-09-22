@@ -5,5 +5,5 @@
         mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
         x:Class="The_Uno.MainWindow"
         Title="The_Uno">
-    Welcome to Avalonia!
+    Welcome to Avalonio!
 </Window>
