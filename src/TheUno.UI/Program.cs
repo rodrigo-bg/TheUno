@@ -1,7 +1,7 @@
 ﻿using Avalonia;
 using System;
 
-namespace The_Uno;
+namespace TheUno.UI;
 
 class Program
 {

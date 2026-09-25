@@ -1,6 +1,6 @@
 using Avalonia.Controls;
 
-namespace The_Uno;
+namespace TheUno.UI;
 
 public partial class MainWindow : Window
 {
