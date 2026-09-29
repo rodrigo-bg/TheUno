@@ -17,8 +17,7 @@ namespace TheUno.Infrastructure.Migrations
                 name: "Players",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "INTEGER", nullable: false)
-                        .Annotation("Sqlite:Autoincrement", true),
+                    Id = table.Column<Guid>(type: "TEXT", nullable: false),
                     Name = table.Column<string>(type: "TEXT", maxLength: 50, nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "TEXT", nullable: false)
                 },
@@ -31,12 +30,12 @@ namespace TheUno.Infrastructure.Migrations
                 name: "Matches",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "INTEGER", nullable: false)
-                        .Annotation("Sqlite:Autoincrement", true),
+                    Id = table.Column<Guid>(type: "TEXT", nullable: false),
                     StartedAt = table.Column<DateTime>(type: "TEXT", nullable: false),
                     EndedAt = table.Column<DateTime>(type: "TEXT", nullable: true),
                     TotalTurns = table.Column<int>(type: "INTEGER", nullable: false),
-                    WinnerId = table.Column<int>(type: "INTEGER", nullable: true)
+                    Duration = table.Column<TimeSpan>(type: "TEXT", nullable: false),
+                    WinnerId = table.Column<Guid>(type: "TEXT", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -54,13 +53,13 @@ namespace TheUno.Infrastructure.Migrations
                 {
                     Id = table.Column<long>(type: "INTEGER", nullable: false)
                         .Annotation("Sqlite:Autoincrement", true),
-                    MatchId = table.Column<int>(type: "INTEGER", nullable: false),
+                    MatchId = table.Column<Guid>(type: "TEXT", nullable: false),
                     TurnNumber = table.Column<int>(type: "INTEGER", nullable: false),
-                    PlayerId = table.Column<int>(type: "INTEGER", nullable: false),
-                    ActionType = table.Column<string>(type: "TEXT", maxLength: 20, nullable: false),
-                    CardDetails = table.Column<string>(type: "TEXT", maxLength: 30, nullable: true),
+                    PlayerId = table.Column<Guid>(type: "TEXT", nullable: false),
+                    Action = table.Column<int>(type: "INTEGER", maxLength: 20, nullable: false),
+                    CardDetails = table.Column<string>(type: "TEXT", maxLength: 30, nullable: false),
                     ColorChosen = table.Column<string>(type: "TEXT", maxLength: 10, nullable: true),
-                    Timetamp = table.Column<DateTime>(type: "TEXT", nullable: false)
+                    Timestamp = table.Column<DateTime>(type: "TEXT", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -84,9 +83,9 @@ namespace TheUno.Infrastructure.Migrations
                 columns: new[] { "Id", "CreatedAt", "Name" },
                 values: new object[,]
                 {
-                    { 1, new DateTime(2026, 9, 25, 0, 0, 0, 0, DateTimeKind.Utc), "Rodri" },
-                    { 2, new DateTime(2026, 9, 25, 0, 0, 0, 0, DateTimeKind.Utc), "Tona" },
-                    { 3, new DateTime(2026, 9, 25, 0, 0, 0, 0, DateTimeKind.Utc), "Ale" }
+                    { new Guid("11111111-1111-1111-1111-111111111111"), new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc), "Rodri" },
+                    { new Guid("22222222-2222-2222-2222-222222222222"), new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc), "Tona" },
+                    { new Guid("33333333-3333-3333-3333-333333333333"), new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc), "Alejandro" }
                 });
 
             migrationBuilder.CreateIndex(

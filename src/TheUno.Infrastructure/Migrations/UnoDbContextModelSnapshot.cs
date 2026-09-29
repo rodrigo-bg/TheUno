@@ -23,12 +23,12 @@ namespace TheUno.Infrastructure.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER");
 
-                    b.Property<string>("ActionType")
-                        .IsRequired()
+                    b.Property<int>("Action")
                         .HasMaxLength(20)
-                        .HasColumnType("TEXT");
+                        .HasColumnType("INTEGER");
 
                     b.Property<string>("CardDetails")
+                        .IsRequired()
                         .HasMaxLength(30)
                         .HasColumnType("TEXT");
 
@@ -36,13 +36,13 @@ namespace TheUno.Infrastructure.Migrations
                         .HasMaxLength(10)
                         .HasColumnType("TEXT");
 
-                    b.Property<int>("MatchId")
-                        .HasColumnType("INTEGER");
+                    b.Property<Guid>("MatchId")
+                        .HasColumnType("TEXT");
 
-                    b.Property<int>("PlayerId")
-                        .HasColumnType("INTEGER");
+                    b.Property<Guid>("PlayerId")
+                        .HasColumnType("TEXT");
 
-                    b.Property<DateTime>("Timetamp")
+                    b.Property<DateTime>("Timestamp")
                         .HasColumnType("TEXT");
 
                     b.Property<int>("TurnNumber")
@@ -59,9 +59,12 @@ namespace TheUno.Infrastructure.Migrations
 
             modelBuilder.Entity("TheUno.Infrastructure.Entities.Match", b =>
                 {
-                    b.Property<int>("Id")
+                    b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER");
+                        .HasColumnType("TEXT");
+
+                    b.Property<TimeSpan>("Duration")
+                        .HasColumnType("TEXT");
 
                     b.Property<DateTime?>("EndedAt")
                         .HasColumnType("TEXT");
@@ -72,8 +75,8 @@ namespace TheUno.Infrastructure.Migrations
                     b.Property<int>("TotalTurns")
                         .HasColumnType("INTEGER");
 
-                    b.Property<int?>("WinnerId")
-                        .HasColumnType("INTEGER");
+                    b.Property<Guid?>("WinnerId")
+                        .HasColumnType("TEXT");
 
                     b.HasKey("Id");
 
@@ -84,9 +87,9 @@ namespace TheUno.Infrastructure.Migrations
 
             modelBuilder.Entity("TheUno.Infrastructure.Entities.Player", b =>
                 {
-                    b.Property<int>("Id")
+                    b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER");
+                        .HasColumnType("TEXT");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("TEXT");
@@ -103,21 +106,21 @@ namespace TheUno.Infrastructure.Migrations
                     b.HasData(
                         new
                         {
-                            Id = 1,
-                            CreatedAt = new DateTime(2026, 9, 25, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Id = new Guid("11111111-1111-1111-1111-111111111111"),
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             Name = "Rodri"
                         },
                         new
                         {
-                            Id = 2,
-                            CreatedAt = new DateTime(2026, 9, 25, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Id = new Guid("22222222-2222-2222-2222-222222222222"),
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             Name = "Tona"
                         },
                         new
                         {
-                            Id = 3,
-                            CreatedAt = new DateTime(2026, 9, 25, 0, 0, 0, 0, DateTimeKind.Utc),
-                            Name = "Ale"
+                            Id = new Guid("33333333-3333-3333-3333-333333333333"),
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Name = "Alejandro"
                         });
                 });
 

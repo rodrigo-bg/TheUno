@@ -37,9 +37,9 @@ public class UnoDbContext : DbContext
 
             // Semilla de Datos (Seed Data) con los 3 integrantes del equipo
             entity.HasData(
-                new Player { Id = 1, Name = "Rodri", CreatedAt = new DateTime(2026, 9, 25, 0, 0, 0, DateTimeKind.Utc) },
-                new Player { Id = 2, Name = "Tona", CreatedAt = new DateTime(2026, 9, 25, 0, 0, 0, DateTimeKind.Utc) },
-                new Player { Id = 3, Name = "Ale", CreatedAt = new DateTime(2026, 9, 25, 0, 0, 0, DateTimeKind.Utc) }
+                new Player { Id = Guid.Parse("11111111-1111-1111-1111-111111111111"), Name = "Rodri", CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
+                new Player { Id = Guid.Parse("22222222-2222-2222-2222-222222222222"), Name = "Tona", CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
+                new Player { Id = Guid.Parse("33333333-3333-3333-3333-333333333333"), Name = "Alejandro", CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) }
             );
         });
         
@@ -48,7 +48,7 @@ public class UnoDbContext : DbContext
             {
                 entity.HasKey(g => g.Id);
 
-                entity.Property(g => g.ActionType).IsRequired().HasMaxLength(20);
+                entity.Property(g => g.Action).IsRequired().HasMaxLength(20);
                 entity.Property(g => g.CardDetails).HasMaxLength(30);
                 entity.Property(g => g.ColorChosen).HasMaxLength(10);
 
