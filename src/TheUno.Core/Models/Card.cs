@@ -1,9 +1,19 @@
+using System;
+
 namespace TheUno.Core.Models;
 
-public record Card(Guid Id, CardColor Color, CardType Type, int? Number = null)
+public class Card
 {
-    // Facilita mostrar la carta en logs y botones mientras no hay imágenes
-    public string DisplayText => Type == CardType.Number 
-        ? $"{Color} {Number}" 
-        : $"{Color} {Type}";
-}
+    public Guid Id { get; }
+    public CardColor Color { get; }
+    public CardType Type { get; }
+    public int? Number { get; }
+
+    public Card(Guid id, CardColor color, CardType type, int? number = null)
+    {
+        Id = id;
+        Color = color;
+        Type = type;
+        Number = number;
+    }
+} 
