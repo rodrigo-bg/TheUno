@@ -16,4 +16,8 @@
             <PrivateAssets Condition="'$(Configuration)' != 'Debug'">All</PrivateAssets>
         </PackageReference>
     </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\TheUno.Core\TheUno.Core.csproj" />
+    </ItemGroup>
 </Project>
