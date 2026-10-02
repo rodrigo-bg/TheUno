@@ -60,12 +60,13 @@ public partial class BoardViewModel : ViewModelBase
 
     public string DirectionText => IsClockwise ? "Horario" : "Antihorario";
 
+    // Paleta tomada directamente de las cartas 8 bits
     public IBrush ActiveColorBrush => ActiveColor switch
     {
-        'r' => new SolidColorBrush(Color.Parse("#E53935")),
-        'g' => new SolidColorBrush(Color.Parse("#43A047")),
-        'b' => new SolidColorBrush(Color.Parse("#1E88E5")),
-        'y' => new SolidColorBrush(Color.Parse("#FDD835")),
+        'r' => new SolidColorBrush(Color.Parse("#FF0000")),
+        'g' => new SolidColorBrush(Color.Parse("#40FF00")),
+        'b' => new SolidColorBrush(Color.Parse("#0020FF")),
+        'y' => new SolidColorBrush(Color.Parse("#E6B400")),
         _ => new SolidColorBrush(Color.Parse("#555555"))
     };
 

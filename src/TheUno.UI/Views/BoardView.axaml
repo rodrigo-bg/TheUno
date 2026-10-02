@@ -26,10 +26,7 @@
 
     <!-- Fondo de la mesa -->
     <UserControl.Background>
-        <RadialGradientBrush>
-            <GradientStop Color="#1E7A46" Offset="0" />
-            <GradientStop Color="#0B3D22" Offset="1" />
-        </RadialGradientBrush>
+        <ImageBrush Source="avares://TheUno.UI/Assets/Backgrounds/table_8bit.jpg" Stretch="UniformToFill" />
     </UserControl.Background>
 
     <UserControl.Styles>
@@ -39,12 +36,26 @@
             <Setter Property="Padding" Value="12" />
             <Setter Property="Margin" Value="12" />
         </Style>
-        <Style Selector="TextBlock.playerName">
-            <Setter Property="FontSize" Value="18" />
-            <Setter Property="FontWeight" Value="Bold" />
+        <!-- Textos estilo 8 bits: fuente pixel y sombra dura sin desenfoque -->
+        <Style Selector="TextBlock.pixelText">
+            <Setter Property="FontFamily" Value="{StaticResource PixelFont}" />
+            <Setter Property="FontWeight" Value="Normal" />
             <Setter Property="Foreground" Value="White" />
             <Setter Property="HorizontalAlignment" Value="Center" />
-            <Setter Property="Margin" Value="0,0,0,8" />
+        </Style>
+        <Style Selector="TextBlock.title">
+            <Setter Property="FontSize" Value="40" />
+            <Setter Property="Margin" Value="0,16,0,4" />
+            <Setter Property="Effect">
+                <DropShadowEffect OffsetX="5" OffsetY="5" BlurRadius="0" Color="Black" Opacity="1" />
+            </Setter>
+        </Style>
+        <Style Selector="TextBlock.playerName">
+            <Setter Property="FontSize" Value="14" />
+            <Setter Property="Margin" Value="0,0,0,12" />
+            <Setter Property="Effect">
+                <DropShadowEffect OffsetX="2" OffsetY="2" BlurRadius="0" Color="Black" Opacity="1" />
+            </Setter>
         </Style>
         <Style Selector="TextBlock.zoneLabel">
             <Setter Property="FontSize" Value="13" />
@@ -99,17 +110,13 @@
 
         <!-- Encabezado -->
         <TextBlock Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="3"
-                   Text="THE UNO"
-                   FontSize="50"
-                   FontWeight="Black"
-                   Foreground="White"
-                   HorizontalAlignment="Center"
-                   Margin="0,12,0,0" />
+                   Classes="pixelText title"
+                   Text="THE UNO" />
 
         <!-- Jugador 2 (Izquierda) -->
         <Border Grid.Row="1" Grid.Column="0" Classes="playerZone">
             <DockPanel>
-                <TextBlock DockPanel.Dock="Top" Classes="playerName" Text="{Binding Player2.Name}" />
+                <TextBlock DockPanel.Dock="Top" Classes="pixelText playerName" Text="{Binding Player2.Name}" />
                 <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
                     <ItemsControl Classes="sideHand" ItemsSource="{Binding Player2.Hand}">
                         <ItemsControl.ItemsPanel>
@@ -132,7 +139,7 @@
         <!-- Jugador 3 (Derecha) -->
         <Border Grid.Row="1" Grid.Column="2" Classes="playerZone">
             <DockPanel>
-                <TextBlock DockPanel.Dock="Top" Classes="playerName" Text="{Binding Player3.Name}" />
+                <TextBlock DockPanel.Dock="Top" Classes="pixelText playerName" Text="{Binding Player3.Name}" />
                 <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
                     <ItemsControl Classes="sideHand" ItemsSource="{Binding Player3.Hand}">
                         <ItemsControl.ItemsPanel>
@@ -211,7 +218,7 @@
                 Classes="playerZone"
                 Height="220">
             <DockPanel>
-                <TextBlock DockPanel.Dock="Top" Classes="playerName" Text="{Binding Player1.Name}" />
+                <TextBlock DockPanel.Dock="Top" Classes="pixelText playerName" Text="{Binding Player1.Name}" />
                 <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
                     <ItemsControl Classes="bottomHand" ItemsSource="{Binding Player1.Hand}">
                         <ItemsControl.ItemsPanel>
