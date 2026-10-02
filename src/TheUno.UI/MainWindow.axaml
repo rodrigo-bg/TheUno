@@ -2,8 +2,13 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+        xmlns:views="using:TheUno.UI.Views"
+        mc:Ignorable="d" d:DesignWidth="1280" d:DesignHeight="800"
         x:Class="TheUno.UI.MainWindow"
-        Title="TheUno.UI">
-    Welcome to Avalonia!
+        Title="The Uno"
+        Width="1200" Height="720"
+        MinWidth="960" MinHeight="600"
+        WindowStartupLocation="CenterScreen"
+        WindowState="Maximized">
+    <views:BoardView />
 </Window>

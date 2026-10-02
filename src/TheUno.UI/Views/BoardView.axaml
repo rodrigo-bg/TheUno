@@ -1,0 +1,170 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d" d:DesignWidth="1280" d:DesignHeight="800"
+             x:Class="TheUno.UI.Views.BoardView">
+
+    <!-- Fondo de la mesa -->
+    <UserControl.Background>
+        <RadialGradientBrush>
+            <GradientStop Color="#1E7A46" Offset="0" />
+            <GradientStop Color="#0B3D22" Offset="1" />
+        </RadialGradientBrush>
+    </UserControl.Background>
+
+    <UserControl.Styles>
+        <Style Selector="Border.playerZone">
+            <Setter Property="Background" Value="#33000000" />
+            <Setter Property="CornerRadius" Value="12" />
+            <Setter Property="Padding" Value="12" />
+            <Setter Property="Margin" Value="12" />
+        </Style>
+        <Style Selector="TextBlock.playerName">
+            <Setter Property="FontSize" Value="18" />
+            <Setter Property="FontWeight" Value="Bold" />
+            <Setter Property="Foreground" Value="White" />
+            <Setter Property="HorizontalAlignment" Value="Center" />
+            <Setter Property="Margin" Value="0,0,0,8" />
+        </Style>
+        <Style Selector="TextBlock.zoneLabel">
+            <Setter Property="FontSize" Value="13" />
+            <Setter Property="Foreground" Value="#CCFFFFFF" />
+            <Setter Property="HorizontalAlignment" Value="Center" />
+            <Setter Property="Margin" Value="0,8,0,0" />
+        </Style>
+
+        <!-- Pila de robo interactiva -->
+        <Style Selector="Button.drawPile">
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="RenderTransform" Value="scale(1)" />
+            <Setter Property="Transitions">
+                <Transitions>
+                    <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.15" />
+                </Transitions>
+            </Setter>
+        </Style>
+        <Style Selector="Button.drawPile /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="Transparent" />
+        </Style>
+        <Style Selector="Button.drawPile:pointerover">
+            <Setter Property="RenderTransform" Value="scale(1.06)" />
+        </Style>
+        <Style Selector="Button.drawPile:pressed">
+            <Setter Property="RenderTransform" Value="scale(0.97)" />
+        </Style>
+    </UserControl.Styles>
+
+    <Grid RowDefinitions="Auto,*,Auto" ColumnDefinitions="240,*,240">
+
+        <!-- Encabezado -->
+        <TextBlock Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="3"
+                   Text="THE UNO"
+                   FontSize="26"
+                   FontWeight="Black"
+                   Foreground="White"
+                   HorizontalAlignment="Center"
+                   Margin="0,12,0,0" />
+
+        <!-- Jugador 2 (Izquierda) -->
+        <Border Grid.Row="1" Grid.Column="0" Classes="playerZone">
+            <DockPanel>
+                <TextBlock DockPanel.Dock="Top" Classes="playerName" Text="Jugador 2" />
+                <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+                    <ItemsControl>
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <StackPanel Orientation="Vertical" HorizontalAlignment="Center" />
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                    </ItemsControl>
+                </ScrollViewer>
+            </DockPanel>
+        </Border>
+
+        <!-- Jugador 3 (Derecha) -->
+        <Border Grid.Row="1" Grid.Column="2" Classes="playerZone">
+            <DockPanel>
+                <TextBlock DockPanel.Dock="Top" Classes="playerName" Text="Jugador 3" />
+                <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+                    <ItemsControl>
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <StackPanel Orientation="Vertical" HorizontalAlignment="Center" />
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                    </ItemsControl>
+                </ScrollViewer>
+            </DockPanel>
+        </Border>
+
+        <!-- Zona Central -->
+        <Grid Grid.Row="1" Grid.Column="1"
+              ColumnDefinitions="Auto,Auto,Auto"
+              ColumnSpacing="36"
+              HorizontalAlignment="Center"
+              VerticalAlignment="Center">
+
+            <!-- Pila de robo -->
+            <StackPanel Grid.Column="0">
+                <Button Classes="drawPile" ToolTip.Tip="Robar una carta">
+                    <Border Width="110" Height="165" CornerRadius="10" ClipToBounds="True">
+                        <Image Source="avares://TheUno.UI/Assets/Cards/back.png" Stretch="UniformToFill" />
+                    </Border>
+                </Button>
+                <TextBlock Classes="zoneLabel" Text="Robar" />
+            </StackPanel>
+
+            <!-- Pila de descarte -->
+            <StackPanel Grid.Column="1">
+                <Panel Width="110" Height="165">
+                    <Rectangle Stroke="#99FFFFFF"
+                               StrokeThickness="2"
+                               StrokeDashArray="4,3"
+                               RadiusX="10" RadiusY="10" />
+                </Panel>
+                <TextBlock Classes="zoneLabel" Text="Descarte" />
+            </StackPanel>
+
+            <!-- Color activo y dirección del turno -->
+            <StackPanel Grid.Column="2" VerticalAlignment="Center" Spacing="4">
+                <Ellipse Width="56" Height="56"
+                         Fill="#555555"
+                         Stroke="White"
+                         StrokeThickness="3"
+                         HorizontalAlignment="Center" />
+                <TextBlock Classes="zoneLabel" Text="Color activo" Margin="0,0,0,16" />
+
+                <Canvas Width="60" Height="60" HorizontalAlignment="Center">
+                    <Path Data="M 30,6 A 24,24 0 1 1 6,30"
+                          Stroke="White"
+                          StrokeThickness="4"
+                          StrokeLineCap="Round" />
+                    <Path Data="M 0,32 L 6,21 L 12,32 Z" Fill="White" />
+                </Canvas>
+                <TextBlock Classes="zoneLabel" Text="Horario" />
+            </StackPanel>
+        </Grid>
+
+        <!-- Jugador 1 (Abajo) -->
+        <Border Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="3"
+                Classes="playerZone"
+                Height="220">
+            <DockPanel>
+                <TextBlock DockPanel.Dock="Top" Classes="playerName" Text="Jugador 1" />
+                <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
+                    <ItemsControl>
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" />
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                    </ItemsControl>
+                </ScrollViewer>
+            </DockPanel>
+        </Border>
+    </Grid>
+</UserControl>
