@@ -2,8 +2,24 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="using:TheUno.UI.ViewModels"
              mc:Ignorable="d" d:DesignWidth="1280" d:DesignHeight="800"
-             x:Class="TheUno.UI.Views.BoardView">
+             x:Class="TheUno.UI.Views.BoardView"
+             x:DataType="vm:BoardViewModel"
+             x:CompileBindings="True">
+
+    <Design.DataContext>
+        <vm:BoardViewModel />
+    </Design.DataContext>
+
+    <UserControl.DataTemplates>
+        <!-- Carta reutilizable: muestra la imagen correspondiente con esquinas redondeadas -->
+        <DataTemplate DataType="vm:CardViewModel">
+            <Border Classes="card" CornerRadius="8" ClipToBounds="True" BoxShadow="0 2 6 0 #66000000">
+                <Image Source="{Binding Image}" Stretch="UniformToFill" />
+            </Border>
+        </DataTemplate>
+    </UserControl.DataTemplates>
 
     <!-- Fondo de la mesa -->
     <UserControl.Background>
@@ -56,6 +72,24 @@
         <Style Selector="Button.drawPile:pressed">
             <Setter Property="RenderTransform" Value="scale(0.97)" />
         </Style>
+
+        <!-- Tamaños de carta por zona -->
+        <Style Selector="ItemsControl.bottomHand Border.card">
+            <Setter Property="Width" Value="84" />
+            <Setter Property="Height" Value="126" />
+        </Style>
+        <Style Selector="ItemsControl.sideHand Border.card">
+            <Setter Property="Width" Value="64" />
+            <Setter Property="Height" Value="96" />
+        </Style>
+
+        <!-- Flecha de dirección: se refleja cuando el sentido es antihorario -->
+        <Style Selector="Canvas.directionArrow">
+            <Setter Property="RenderTransform" Value="scaleX(1)" />
+        </Style>
+        <Style Selector="Canvas.directionArrow.counterClockwise">
+            <Setter Property="RenderTransform" Value="scaleX(-1)" />
+        </Style>
     </UserControl.Styles>
 
     <Grid RowDefinitions="Auto,*,Auto" ColumnDefinitions="240,*,240">
@@ -63,7 +97,7 @@
         <!-- Encabezado -->
         <TextBlock Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="3"
                    Text="THE UNO"
-                   FontSize="26"
+                   FontSize="50"
                    FontWeight="Black"
                    Foreground="White"
                    HorizontalAlignment="Center"
@@ -72,14 +106,21 @@
         <!-- Jugador 2 (Izquierda) -->
         <Border Grid.Row="1" Grid.Column="0" Classes="playerZone">
             <DockPanel>
-                <TextBlock DockPanel.Dock="Top" Classes="playerName" Text="Jugador 2" />
+                <TextBlock DockPanel.Dock="Top" Classes="playerName" Text="{Binding Player2.Name}" />
                 <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
-                    <ItemsControl>
+                    <ItemsControl Classes="sideHand" ItemsSource="{Binding Player2.Hand}">
                         <ItemsControl.ItemsPanel>
                             <ItemsPanelTemplate>
-                                <StackPanel Orientation="Vertical" HorizontalAlignment="Center" />
+                                <StackPanel Orientation="Vertical" HorizontalAlignment="Center" Spacing="-30" />
                             </ItemsPanelTemplate>
                         </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate DataType="vm:CardViewModel">
+                                <LayoutTransformControl LayoutTransform="rotate(90deg)">
+                                    <ContentControl Content="{Binding}" />
+                                </LayoutTransformControl>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
                     </ItemsControl>
                 </ScrollViewer>
             </DockPanel>
@@ -88,14 +129,21 @@
         <!-- Jugador 3 (Derecha) -->
         <Border Grid.Row="1" Grid.Column="2" Classes="playerZone">
             <DockPanel>
-                <TextBlock DockPanel.Dock="Top" Classes="playerName" Text="Jugador 3" />
+                <TextBlock DockPanel.Dock="Top" Classes="playerName" Text="{Binding Player3.Name}" />
                 <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
-                    <ItemsControl>
+                    <ItemsControl Classes="sideHand" ItemsSource="{Binding Player3.Hand}">
                         <ItemsControl.ItemsPanel>
                             <ItemsPanelTemplate>
-                                <StackPanel Orientation="Vertical" HorizontalAlignment="Center" />
+                                <StackPanel Orientation="Vertical" HorizontalAlignment="Center" Spacing="-30" />
                             </ItemsPanelTemplate>
                         </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate DataType="vm:CardViewModel">
+                                <LayoutTransformControl LayoutTransform="rotate(-90deg)">
+                                    <ContentControl Content="{Binding}" />
+                                </LayoutTransformControl>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
                     </ItemsControl>
                 </ScrollViewer>
             </DockPanel>
@@ -112,7 +160,7 @@
             <StackPanel Grid.Column="0">
                 <Button Classes="drawPile" ToolTip.Tip="Robar una carta">
                     <Border Width="110" Height="165" CornerRadius="10" ClipToBounds="True">
-                        <Image Source="avares://TheUno.UI/Assets/Cards/back.png" Stretch="UniformToFill" />
+                        <Image Source="{Binding DrawPileImage}" Stretch="UniformToFill" />
                     </Border>
                 </Button>
                 <TextBlock Classes="zoneLabel" Text="Robar" />
@@ -125,6 +173,9 @@
                                StrokeThickness="2"
                                StrokeDashArray="4,3"
                                RadiusX="10" RadiusY="10" />
+                    <Border CornerRadius="10" ClipToBounds="True" BoxShadow="0 4 12 0 #88000000">
+                        <Image Source="{Binding TopDiscard.Image}" Stretch="UniformToFill" />
+                    </Border>
                 </Panel>
                 <TextBlock Classes="zoneLabel" Text="Descarte" />
             </StackPanel>
@@ -132,20 +183,23 @@
             <!-- Color activo y dirección del turno -->
             <StackPanel Grid.Column="2" VerticalAlignment="Center" Spacing="4">
                 <Ellipse Width="56" Height="56"
-                         Fill="#555555"
+                         Fill="{Binding ActiveColorBrush}"
                          Stroke="White"
                          StrokeThickness="3"
                          HorizontalAlignment="Center" />
                 <TextBlock Classes="zoneLabel" Text="Color activo" Margin="0,0,0,16" />
 
-                <Canvas Width="60" Height="60" HorizontalAlignment="Center">
+                <Canvas Classes="directionArrow"
+                        Classes.counterClockwise="{Binding IsCounterClockwise}"
+                        Width="60" Height="60"
+                        HorizontalAlignment="Center">
                     <Path Data="M 30,6 A 24,24 0 1 1 6,30"
                           Stroke="White"
                           StrokeThickness="4"
                           StrokeLineCap="Round" />
                     <Path Data="M 0,32 L 6,21 L 12,32 Z" Fill="White" />
                 </Canvas>
-                <TextBlock Classes="zoneLabel" Text="Horario" />
+                <TextBlock Classes="zoneLabel" Text="{Binding DirectionText}" />
             </StackPanel>
         </Grid>
 
@@ -154,12 +208,12 @@
                 Classes="playerZone"
                 Height="220">
             <DockPanel>
-                <TextBlock DockPanel.Dock="Top" Classes="playerName" Text="Jugador 1" />
+                <TextBlock DockPanel.Dock="Top" Classes="playerName" Text="{Binding Player1.Name}" />
                 <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
-                    <ItemsControl>
+                    <ItemsControl Classes="bottomHand" ItemsSource="{Binding Player1.Hand}">
                         <ItemsControl.ItemsPanel>
                             <ItemsPanelTemplate>
-                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" />
+                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="8" />
                             </ItemsPanelTemplate>
                         </ItemsControl.ItemsPanel>
                     </ItemsControl>
