@@ -15,4 +15,25 @@ public class Deck
         _discardPile = new List<Card>();
         _random = new Random();
     }
+
+    public int GetDrawPileCount()
+    {
+        return _drawPile.Count;
+    }
+
+    public int GetDiscardPileCount()
+    {
+        return _discardPile.Count;
+    }
+    
+    public Card? GetTopCard()
+    {
+        if (_discardPile.Count == 0)
+        {
+            return null;
+        }
+        return _discardPile[_discardPile.Count - 1];    
+    }
+    
+    
 }
