@@ -6,16 +6,19 @@
              mc:Ignorable="d" d:DesignWidth="1280" d:DesignHeight="800"
              x:Class="TheUno.UI.Views.BoardView"
              x:DataType="vm:BoardViewModel"
-             x:CompileBindings="True">
+             x:CompileBindings="True"
+             RenderOptions.BitmapInterpolationMode="None">
+
+    <!-- RenderOptions sin interpolación: las cartas son pixel art y deben verse nítidas al escalarse -->
 
     <Design.DataContext>
         <vm:BoardViewModel />
     </Design.DataContext>
 
     <UserControl.DataTemplates>
-        <!-- Carta reutilizable: muestra la imagen correspondiente con esquinas redondeadas -->
+        <!-- Carta reutilizable: muestra la imagen correspondiente con esquinas ligeramente redondeadas -->
         <DataTemplate DataType="vm:CardViewModel">
-            <Border Classes="card" CornerRadius="8" ClipToBounds="True" BoxShadow="0 2 6 0 #66000000">
+            <Border Classes="card" CornerRadius="4" ClipToBounds="True" BoxShadow="0 2 6 0 #66000000">
                 <Image Source="{Binding Image}" Stretch="UniformToFill" />
             </Border>
         </DataTemplate>
@@ -75,11 +78,11 @@
 
         <!-- Tamaños de carta por zona -->
         <Style Selector="ItemsControl.bottomHand Border.card">
-            <Setter Property="Width" Value="84" />
+            <Setter Property="Width" Value="80" />
             <Setter Property="Height" Value="126" />
         </Style>
         <Style Selector="ItemsControl.sideHand Border.card">
-            <Setter Property="Width" Value="64" />
+            <Setter Property="Width" Value="61" />
             <Setter Property="Height" Value="96" />
         </Style>
 
@@ -159,7 +162,7 @@
             <!-- Pila de robo -->
             <StackPanel Grid.Column="0">
                 <Button Classes="drawPile" ToolTip.Tip="Robar una carta">
-                    <Border Width="110" Height="165" CornerRadius="10" ClipToBounds="True">
+                    <Border Width="105" Height="165" CornerRadius="6" ClipToBounds="True">
                         <Image Source="{Binding DrawPileImage}" Stretch="UniformToFill" />
                     </Border>
                 </Button>
@@ -168,12 +171,12 @@
 
             <!-- Pila de descarte -->
             <StackPanel Grid.Column="1">
-                <Panel Width="110" Height="165">
+                <Panel Width="105" Height="165">
                     <Rectangle Stroke="#99FFFFFF"
                                StrokeThickness="2"
                                StrokeDashArray="4,3"
-                               RadiusX="10" RadiusY="10" />
-                    <Border CornerRadius="10" ClipToBounds="True" BoxShadow="0 4 12 0 #88000000">
+                               RadiusX="6" RadiusY="6" />
+                    <Border CornerRadius="6" ClipToBounds="True" BoxShadow="0 4 12 0 #88000000">
                         <Image Source="{Binding TopDiscard.Image}" Stretch="UniformToFill" />
                     </Border>
                 </Panel>
