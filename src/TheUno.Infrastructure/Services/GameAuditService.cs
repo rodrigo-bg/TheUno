@@ -1,5 +1,6 @@
 ﻿using TheUno.Core.Contracts;
-using TheUno.Core.Engine;
+using TheUno.Core.Events;
+using TheUno.Core.Models;
 
 namespace TheUno.Infrastructure.Services;
 
@@ -25,34 +26,33 @@ public class GameAuditService : IDisposable
     {
         _gameEngine.OnCardPlayed += HandleCardPlayed;
         _gameEngine.OnCardDrawn += HandleCardDrawn;
-        _gameEngine.OnTurnPassed += HandleTurnPassed;
-        _gameEngine.OnUnoCalled += HandleUnoCalled;
-        _gameEngine.OnUnoPenaltyApplied += HandleUnoPenaltyApplied;
+        _gameEngine.OnTurnChanged += HandleTurnChanged;
+        _gameEngine.OnUnoPenalty += HandleUnoPenalty;
     }
 
-    private async void HandleCardPlayed(Guid playerId, string cardDetails, string? chosenColor)
+    private async void HandleCardPlayed(CardPlayedEventArgs args)
     {
         var entry = new GameLogEntryDto(
             MatchId: _currentMatchId,
             TurnNumber: _currentTurnNumber++,
-            PlayerId: playerId,
+            PlayerId: args.Player.Id,
             Action: GameActionType.PlayCard,
-            CardDetails: cardDetails,
-            ChosenColor: chosenColor,
+            CardDetails: args.Card.ToString() ?? string.Empty,
+            ChosenColor: args.EffectiveColor.ToString(),
             Timestamp: DateTime.UtcNow
         );
 
         await _logRepository.LogActionAsync(entry);
     }
 
-    private async void HandleCardDrawn(Guid playerId, string cardDetails)
+    private async void HandleCardDrawn(CardDrawnEventArgs args)
     {
         var entry = new GameLogEntryDto(
             MatchId: _currentMatchId,
-            TurnNumber: _currentTurnNumber++,
-            PlayerId: playerId,
+            TurnNumber: _currentTurnNumber,
+            PlayerId: args.Player.Id,
             Action: GameActionType.DrawCard,
-            CardDetails: cardDetails,
+            CardDetails: args.DrawnCard?.ToString() ?? "Carta escogida",
             ChosenColor: null,
             Timestamp: DateTime.UtcNow
         );
@@ -60,44 +60,20 @@ public class GameAuditService : IDisposable
         await _logRepository.LogActionAsync(entry);
     }
 
-    private async void HandleTurnPassed(Guid playerId)
+    private void HandleTurnChanged(TurnChangedEventArgs args)
     {
-        var entry = new GameLogEntryDto(
-            MatchId: _currentMatchId,
-            TurnNumber: _currentTurnNumber++,
-            PlayerId: playerId,
-            Action: GameActionType.PassTurn,
-            CardDetails: string.Empty,
-            ChosenColor: null,
-            Timestamp: DateTime.UtcNow
-        );
-
-        await _logRepository.LogActionAsync(entry);
+        // Al cambiar de turno se aumenta el contador para la siguiente acción
+        _currentTurnNumber++;
     }
 
-    private async void HandleUnoCalled(Guid playerId)
+    private async void HandleUnoPenalty(Player player)
     {
         var entry = new GameLogEntryDto(
             MatchId: _currentMatchId,
             TurnNumber: _currentTurnNumber,
-            PlayerId: playerId,
-            Action: GameActionType.CallUno,
-            CardDetails: string.Empty,
-            ChosenColor: null,
-            Timestamp: DateTime.UtcNow
-        );
-
-        await _logRepository.LogActionAsync(entry);
-    }
-
-    private async void HandleUnoPenaltyApplied(Guid playerId)
-    {
-        var entry = new GameLogEntryDto(
-            MatchId: _currentMatchId,
-            TurnNumber: _currentTurnNumber,
-            PlayerId: playerId,
+            PlayerId: player.Id,
             Action: GameActionType.UnoPenalty,
-            CardDetails: "+2 cards penalty",
+            CardDetails: "+2 carta de penal (No canto UNO)",
             ChosenColor: null,
             Timestamp: DateTime.UtcNow
         );
@@ -110,8 +86,7 @@ public class GameAuditService : IDisposable
         // Cancelar suscripciones a eventos cuando la partida termine para liberar recursos
         _gameEngine.OnCardPlayed -= HandleCardPlayed;
         _gameEngine.OnCardDrawn -= HandleCardDrawn;
-        _gameEngine.OnTurnPassed -= HandleTurnPassed;
-        _gameEngine.OnUnoCalled -= HandleUnoCalled;
-        _gameEngine.OnUnoPenaltyApplied -= HandleUnoPenaltyApplied;
+        _gameEngine.OnTurnChanged -= HandleTurnChanged;
+        _gameEngine.OnUnoPenalty -= HandleUnoPenalty;
     }
 }
