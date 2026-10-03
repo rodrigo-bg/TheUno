@@ -11,7 +11,7 @@ using TheUno.Infrastructure;
 namespace TheUno.Infrastructure.Migrations
 {
     [DbContext(typeof(UnoDbContext))]
-    [Migration("20260929001006_InitialCreate")]
+    [Migration("20261003215836_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
