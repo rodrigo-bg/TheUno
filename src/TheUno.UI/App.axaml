@@ -4,6 +4,13 @@
              RequestedThemeVariant="Default">
              <!-- "Default" ThemeVariant follows system theme variant. "Dark" or "Light" are other available options. -->
 
+    <Application.Resources>
+        <!-- Fuente pixel art (Press Start 2P, licencia OFL en Assets/Fonts/OFL.txt) -->
+        <FontFamily x:Key="PixelFont">avares://TheUno.UI/Assets/Fonts#Press Start 2P</FontFamily>
+        <!-- Los controles de Fluent (botones, tooltips, etc.) también usan la fuente pixel -->
+        <StaticResource x:Key="ContentControlThemeFontFamily" ResourceKey="PixelFont" />
+    </Application.Resources>
+
     <Application.Styles>
         <FluentTheme />
     </Application.Styles>
