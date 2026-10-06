@@ -14,6 +14,9 @@ public class Match
     public Guid? WinnerId {get; set;}
     public Player? Winner {get; set;}
     
+    // Propiedad de navegación a MatchPlayer
+    public ICollection<MatchPlayer> MatchPlayers {get; set;} = new List<MatchPlayer>();
+    
     // Propiedad de navegación a la traza/histotria de logs de la partida
     public ICollection<GameLog> GameLogs {get; set;} = new List<GameLog>();
 }
