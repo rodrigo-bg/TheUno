@@ -7,17 +7,25 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="Avalonia" Version="12.1.1"/>
-        <PackageReference Include="Avalonia.Desktop" Version="12.1.1"/>
-        <PackageReference Include="Avalonia.Themes.Fluent" Version="12.1.1"/>
-        <PackageReference Include="Avalonia.Fonts.Inter" Version="12.1.1"/>
+        <PackageReference Include="Avalonia" Version="12.1.1" />
+        <PackageReference Include="Avalonia.Desktop" Version="12.1.1" />
+        <PackageReference Include="Avalonia.Themes.Fluent" Version="12.1.1" />
+        <PackageReference Include="Avalonia.Fonts.Inter" Version="12.1.1" />
         <PackageReference Include="AvaloniaUI.DiagnosticsSupport" Version="2.2.3">
             <IncludeAssets Condition="'$(Configuration)' != 'Debug'">None</IncludeAssets>
             <PrivateAssets Condition="'$(Configuration)' != 'Debug'">All</PrivateAssets>
         </PackageReference>
+        <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />
+        <PackageReference Include="NAudio.Wasapi" Version="3.1.0" />
     </ItemGroup>
 
     <ItemGroup>
       <ProjectReference Include="..\TheUno.Core\TheUno.Core.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <AvaloniaResource Include="Assets\**" Exclude="Assets\Audio\**" />
+      <!-- La música se copia junto al ejecutable para que NAudio o afplay la lean como archivo -->
+      <Content Include="Assets\Audio\**" CopyToOutputDirectory="PreserveNewest" />
     </ItemGroup>
 </Project>
