@@ -86,4 +86,25 @@ public class GameRules
 
         return false;
     }
+    
+    public bool IsStackingAttempt(Card cardToPlay, Card topCard)
+    {
+        if (topCard == null || cardToPlay == null)
+        {
+            return false;
+        }
+
+        if (topCard.Type == CardType.DrawTwo && cardToPlay.Type == CardType.DrawTwo)
+        {
+            return true;
+        }
+
+        if (topCard.Type == CardType.WildDrawFour && cardToPlay.Type == CardType.WildDrawFour)
+        {
+            return true;
+        }
+
+        return false;
+    }
+    
 }
