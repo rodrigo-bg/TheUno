@@ -1,9 +1,71 @@
+using System;
+
 namespace TheUno.Core.Models;
 
-public record Card(Guid Id, CardColor Color, CardType Type, int? Number = null)
+public class Card
 {
-    // Facilita mostrar la carta en logs y botones mientras no hay imágenes
-    public string DisplayText => Type == CardType.Number 
-        ? $"{Color} {Number}" 
-        : $"{Color} {Type}";
+    public Guid Id { get; }
+    public CardColor Color { get; }
+    public CardType Type { get; }
+    public int? Number { get; }
+
+    public Card(Guid id, CardColor color, CardType type, int? number = null)
+    {
+        Id = id;
+        Color = color;
+        Type = type;
+        Number = number;
+    }
+
+    // Propiedad pública que espera la UI (Colaborador 1)
+    public string DisplayText
+    {
+        get
+        {
+            return GetDisplayText();
+        }
+    }
+
+    public int GetScoreValue()
+    {
+        switch (Type)
+        {
+            case CardType.Number:
+                if (Number.HasValue)
+                {
+                    return Number.Value;
+                }
+                return 0;
+
+            case CardType.Skip:
+            case CardType.Reverse:
+            case CardType.DrawTwo:
+                return 20;
+
+            case CardType.Wild:
+            case CardType.WildDrawFour:
+                return 50;
+
+            default:
+                return 0;
+        }
+    }
+
+    public string GetDisplayText()
+    {
+        switch (Type)
+        {
+            case CardType.Number:
+                return Color.ToString() + " " + Number.ToString();
+
+            case CardType.Wild:
+                return "Wild";
+
+            case CardType.WildDrawFour:
+                return "Wild Draw 4 (+4)";
+
+            default:
+                return Color.ToString() + " " + Type.ToString();
+        }
+    }
 }
