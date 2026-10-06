@@ -21,11 +21,9 @@ public partial class App : Application
         {
             desktop.MainWindow = new MainWindow
             {
-                DataContext = new MainWindowViewModel()
+                DataContext = new MainWindowViewModel(_music)
             };
 
-            // La música empieza en el menú y sigue sonando dentro de la partida
-            _music.Start();
             desktop.Exit += (_, _) => _music.Dispose();
         }
 
