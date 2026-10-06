@@ -4,6 +4,9 @@
         <TargetFramework>net10.0</TargetFramework>
         <Nullable>enable</Nullable>
         <ApplicationManifest>app.manifest</ApplicationManifest>
+        <!-- Solo se copian las librerías de VLC para Windows x64 (las demás arquitecturas triplican el tamaño de bin/) -->
+        <VlcWindowsX86Enabled>false</VlcWindowsX86Enabled>
+        <VlcWindowsArm64Enabled>false</VlcWindowsArm64Enabled>
     </PropertyGroup>
 
     <ItemGroup>
@@ -16,6 +19,8 @@
             <PrivateAssets Condition="'$(Configuration)' != 'Debug'">All</PrivateAssets>
         </PackageReference>
         <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />
+        <PackageReference Include="LibVLCSharp" Version="3.10.1" />
+        <PackageReference Include="VideoLAN.LibVLC.Windows" Version="3.0.24" />
     </ItemGroup>
 
     <ItemGroup>
@@ -23,6 +28,8 @@
     </ItemGroup>
 
     <ItemGroup>
-      <AvaloniaResource Include="Assets\**" />
+      <AvaloniaResource Include="Assets\**" Exclude="Assets\Audio\**" />
+      <!-- La música se copia junto al ejecutable para que LibVLC la lea como archivo -->
+      <Content Include="Assets\Audio\**" CopyToOutputDirectory="PreserveNewest" />
     </ItemGroup>
 </Project>
