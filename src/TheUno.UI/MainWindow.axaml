@@ -3,12 +3,27 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:views="using:TheUno.UI.Views"
+        xmlns:vm="using:TheUno.UI.ViewModels"
         mc:Ignorable="d" d:DesignWidth="1280" d:DesignHeight="800"
         x:Class="TheUno.UI.MainWindow"
+        x:DataType="vm:MainWindowViewModel"
+        x:CompileBindings="True"
         Title="The Uno"
         Width="1200" Height="720"
         MinWidth="960" MinHeight="600"
         WindowStartupLocation="CenterScreen"
-        WindowState="Maximized">
-    <views:BoardView />
+        WindowState="Maximized"
+        FontFamily="{StaticResource PixelFont}">
+
+    <!-- Cada ViewModel de pantalla se dibuja con su vista correspondiente -->
+    <Window.DataTemplates>
+        <DataTemplate DataType="vm:MenuViewModel">
+            <views:MenuView />
+        </DataTemplate>
+        <DataTemplate DataType="vm:BoardViewModel">
+            <views:BoardView />
+        </DataTemplate>
+    </Window.DataTemplates>
+
+    <ContentControl Content="{Binding CurrentView}" />
 </Window>

@@ -43,13 +43,6 @@
             <Setter Property="Foreground" Value="White" />
             <Setter Property="HorizontalAlignment" Value="Center" />
         </Style>
-        <Style Selector="TextBlock.title">
-            <Setter Property="FontSize" Value="40" />
-            <Setter Property="Margin" Value="0,16,0,4" />
-            <Setter Property="Effect">
-                <DropShadowEffect OffsetX="5" OffsetY="5" BlurRadius="0" Color="Black" Opacity="1" />
-            </Setter>
-        </Style>
         <Style Selector="TextBlock.playerName">
             <Setter Property="FontSize" Value="14" />
             <Setter Property="Margin" Value="0,0,0,12" />
@@ -58,10 +51,13 @@
             </Setter>
         </Style>
         <Style Selector="TextBlock.zoneLabel">
-            <Setter Property="FontSize" Value="13" />
-            <Setter Property="Foreground" Value="#CCFFFFFF" />
+            <Setter Property="FontSize" Value="10" />
+            <Setter Property="Foreground" Value="White" />
             <Setter Property="HorizontalAlignment" Value="Center" />
-            <Setter Property="Margin" Value="0,8,0,0" />
+            <Setter Property="Margin" Value="0,10,0,0" />
+            <Setter Property="Effect">
+                <DropShadowEffect OffsetX="2" OffsetY="2" BlurRadius="0" Color="Black" Opacity="1" />
+            </Setter>
         </Style>
 
         <!-- Pila de robo interactiva -->
@@ -107,11 +103,6 @@
     </UserControl.Styles>
 
     <Grid RowDefinitions="Auto,*,Auto" ColumnDefinitions="240,*,240">
-
-        <!-- Encabezado -->
-        <TextBlock Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="3"
-                   Classes="pixelText title"
-                   Text="THE UNO" />
 
         <!-- Jugador 2 (Izquierda) -->
         <Border Grid.Row="1" Grid.Column="0" Classes="playerZone">
@@ -159,9 +150,40 @@
             </DockPanel>
         </Border>
 
-        <!-- Zona Central -->
+        <!-- Indicadores: color activo y dirección del turno, arriba al centro -->
+        <StackPanel Grid.Row="0" Grid.Column="1"
+                    Orientation="Horizontal"
+                    HorizontalAlignment="Center"
+                    Margin="0,16,0,0"
+                    Spacing="48">
+            <StackPanel>
+                <Ellipse Width="40" Height="40"
+                         Fill="{Binding ActiveColorBrush}"
+                         Stroke="White"
+                         StrokeThickness="3"
+                         HorizontalAlignment="Center" />
+                <TextBlock Classes="zoneLabel" Text="Color activo" />
+            </StackPanel>
+
+            <StackPanel>
+                <Viewbox Width="42" Height="42" HorizontalAlignment="Center">
+                    <Canvas Classes="directionArrow"
+                            Classes.counterClockwise="{Binding IsCounterClockwise}"
+                            Width="60" Height="60">
+                        <Path Data="M 30,6 A 24,24 0 1 1 6,30"
+                              Stroke="White"
+                              StrokeThickness="4"
+                              StrokeLineCap="Round" />
+                        <Path Data="M 0,32 L 6,21 L 12,32 Z" Fill="White" />
+                    </Canvas>
+                </Viewbox>
+                <TextBlock Classes="zoneLabel" Text="{Binding DirectionText}" />
+            </StackPanel>
+        </StackPanel>
+
+        <!-- Zona Central: pila de robo y pila de descarte -->
         <Grid Grid.Row="1" Grid.Column="1"
-              ColumnDefinitions="Auto,Auto,Auto"
+              ColumnDefinitions="Auto,Auto"
               ColumnSpacing="36"
               HorizontalAlignment="Center"
               VerticalAlignment="Center">
@@ -188,28 +210,6 @@
                     </Border>
                 </Panel>
                 <TextBlock Classes="zoneLabel" Text="Descarte" />
-            </StackPanel>
-
-            <!-- Color activo y dirección del turno -->
-            <StackPanel Grid.Column="2" VerticalAlignment="Center" Spacing="4">
-                <Ellipse Width="56" Height="56"
-                         Fill="{Binding ActiveColorBrush}"
-                         Stroke="White"
-                         StrokeThickness="3"
-                         HorizontalAlignment="Center" />
-                <TextBlock Classes="zoneLabel" Text="Color activo" Margin="0,0,0,16" />
-
-                <Canvas Classes="directionArrow"
-                        Classes.counterClockwise="{Binding IsCounterClockwise}"
-                        Width="60" Height="60"
-                        HorizontalAlignment="Center">
-                    <Path Data="M 30,6 A 24,24 0 1 1 6,30"
-                          Stroke="White"
-                          StrokeThickness="4"
-                          StrokeLineCap="Round" />
-                    <Path Data="M 0,32 L 6,21 L 12,32 Z" Fill="White" />
-                </Canvas>
-                <TextBlock Classes="zoneLabel" Text="{Binding DirectionText}" />
             </StackPanel>
         </Grid>
 

@@ -1,0 +1,91 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="using:TheUno.UI.ViewModels"
+             xmlns:controls="using:TheUno.UI.Controls"
+             mc:Ignorable="d" d:DesignWidth="1280" d:DesignHeight="720"
+             x:Class="TheUno.UI.Views.MenuView"
+             x:DataType="vm:MenuViewModel"
+             x:CompileBindings="True"
+             RenderOptions.BitmapInterpolationMode="None">
+
+    <Design.DataContext>
+        <vm:MenuViewModel />
+    </Design.DataContext>
+
+    <!-- Fondo del menú: la taberna con los tres jugadores -->
+    <UserControl.Background>
+        <ImageBrush Source="avares://TheUno.UI/Assets/Backgrounds/menu_8bit.jpg"
+                    Stretch="UniformToFill"
+                    AlignmentX="Left" />
+    </UserControl.Background>
+
+    <UserControl.Styles>
+        <!-- Botones estilo 8 bits: esquinas rectas, borde negro grueso y sombra dura -->
+        <Style Selector="Button.pixelButton">
+            <Setter Property="Foreground" Value="White" />
+            <Setter Property="BorderBrush" Value="Black" />
+            <Setter Property="BorderThickness" Value="5" />
+            <Setter Property="CornerRadius" Value="0" />
+            <Setter Property="Padding" Value="24,30" />
+            <Setter Property="FontSize" Value="24" />
+            <Setter Property="HorizontalAlignment" Value="Stretch" />
+            <Setter Property="HorizontalContentAlignment" Value="Center" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="RenderTransform" Value="translate(0px, 0px)" />
+            <Setter Property="Effect">
+                <DropShadowEffect OffsetX="6" OffsetY="6" BlurRadius="0" Color="Black" Opacity="1" />
+            </Setter>
+        </Style>
+        <Style Selector="Button.pixelButton:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="BorderBrush" Value="White" />
+            <Setter Property="Foreground" Value="White" />
+        </Style>
+        <Style Selector="Button.pixelButton:pressed">
+            <Setter Property="RenderTransform" Value="translate(4px, 4px)" />
+        </Style>
+
+        <!-- Colores tomados de la paleta de las cartas -->
+        <Style Selector="Button.start">
+            <Setter Property="Background" Value="#FF0000" />
+        </Style>
+        <Style Selector="Button.start:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="#FF4040" />
+        </Style>
+        <Style Selector="Button.history">
+            <Setter Property="Background" Value="#0020FF" />
+        </Style>
+        <Style Selector="Button.history:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="#4060FF" />
+        </Style>
+    </UserControl.Styles>
+
+    <Grid>
+        <!-- Título amarillo con contorno blanco, arriba al centro -->
+        <controls:OutlinedText Text="THE UNO"
+                               FontSize="84"
+                               Fill="#E6B400"
+                               Stroke="White"
+                               StrokeThickness="5"
+                               ShadowOffset="8"
+                               HorizontalAlignment="Center"
+                               VerticalAlignment="Top"
+                               Margin="0,36,0,0" />
+
+        <!-- Menú del lado derecho, sobre la barra, sin tapar a los jugadores -->
+        <StackPanel HorizontalAlignment="Right"
+                    VerticalAlignment="Center"
+                    Width="440"
+                    Margin="0,80,48,0"
+                    Spacing="32">
+            <Button Classes="pixelButton start"
+                    Content="INICIAR JUEGO"
+                    Command="{Binding StartGameCommand}" />
+            <Button Classes="pixelButton history"
+                    Content="VER HISTORIAL"
+                    Command="{Binding ShowHistoryCommand}"
+                    ToolTip.Tip="Disponible pronto" />
+        </StackPanel>
+    </Grid>
+</UserControl>
