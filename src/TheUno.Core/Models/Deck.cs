@@ -95,7 +95,7 @@ public class Deck
         }
     }
 
-    public Card? Draw() // 
+    public Card? Draw() 
     {
         if (_drawPile.Count == 0)
         {
