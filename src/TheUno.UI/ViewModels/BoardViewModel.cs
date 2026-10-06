@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using Avalonia.Media;
 using Avalonia.Media.Imaging;
 using CommunityToolkit.Mvvm.ComponentModel;
+using TheUno.Core.Models;
 
 namespace TheUno.UI.ViewModels;
 
@@ -14,9 +15,8 @@ public partial class BoardViewModel : ViewModelBase
 {
     private const int InitialHandSize = 7;
 
-    private static readonly string[] Colors = { "r", "g", "b", "y" };
-    private static readonly string[] Values =
-        { "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "skip", "reverse", "draw2" };
+    private static readonly CardColor[] Colors = { CardColor.Red, CardColor.Green, CardColor.Blue, CardColor.Yellow };
+    private static readonly CardType[] ActionTypes = { CardType.Skip, CardType.Reverse, CardType.DrawTwo };
 
     private readonly Random _random = new();
 
@@ -46,7 +46,7 @@ public partial class BoardViewModel : ViewModelBase
             }
         }
 
-        _topDiscard = new CardViewModel(Colors[_random.Next(Colors.Length)] + "_" + Values[_random.Next(10)]);
+        _topDiscard = new CardViewModel(NumberCard());
         _activeColor = _topDiscard.ColorCode ?? 'r';
     }
 
@@ -75,11 +75,21 @@ public partial class BoardViewModel : ViewModelBase
         // 1 de cada 14 cartas es comodín, igual que en la baraja real (8 de 108).
         if (_random.Next(14) == 0)
         {
-            return new CardViewModel(_random.Next(2) == 0 ? "wild" : "wild_draw4");
+            var wildType = _random.Next(2) == 0 ? CardType.Wild : CardType.WildDrawFour;
+            return new CardViewModel(new Card(Guid.NewGuid(), CardColor.None, wildType));
         }
 
-        var color = Colors[_random.Next(Colors.Length)];
-        var value = Values[_random.Next(Values.Length)];
-        return new CardViewModel($"{color}_{value}");
+        // 10 números y 3 cartas de acción por color.
+        var value = _random.Next(13);
+        if (value < 10)
+        {
+            return new CardViewModel(NumberCard());
+        }
+
+        return new CardViewModel(new Card(Guid.NewGuid(), RandomColor(), ActionTypes[value - 10]));
     }
+
+    private Card NumberCard() => new(Guid.NewGuid(), RandomColor(), CardType.Number, _random.Next(10));
+
+    private CardColor RandomColor() => Colors[_random.Next(Colors.Length)];
 }
