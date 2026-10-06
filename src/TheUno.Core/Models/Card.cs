@@ -16,7 +16,16 @@ public class Card
         Type = type;
         Number = number;
     }
-    
+
+    // Propiedad pública que espera la UI (Colaborador 1)
+    public string DisplayText
+    {
+        get
+        {
+            return GetDisplayText();
+        }
+    }
+
     public int GetScoreValue()
     {
         switch (Type)
@@ -41,7 +50,7 @@ public class Card
                 return 0;
         }
     }
-    
+
     public string GetDisplayText()
     {
         switch (Type)
@@ -59,4 +68,4 @@ public class Card
                 return Color.ToString() + " " + Type.ToString();
         }
     }
-} 
+}
