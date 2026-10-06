@@ -132,7 +132,11 @@
             <DockPanel>
                 <TextBlock DockPanel.Dock="Top" Classes="pixelText playerName" Text="{Binding Player3.Name}" />
                 <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
-                    <ItemsControl Classes="sideHand" ItemsSource="{Binding Player3.Hand}">
+                    <!-- Girado 180° con cartas a 90°: cada carta queda orientada hacia el Jugador 3
+                         y la franja visible es la parte superior, donde está el número -->
+                    <ItemsControl Classes="sideHand" ItemsSource="{Binding Player3.Hand}"
+                                  VerticalAlignment="Top"
+                                  RenderTransform="rotate(180deg)">
                         <ItemsControl.ItemsPanel>
                             <ItemsPanelTemplate>
                                 <StackPanel Orientation="Vertical" HorizontalAlignment="Center" Spacing="-30" />
@@ -140,7 +144,7 @@
                         </ItemsControl.ItemsPanel>
                         <ItemsControl.ItemTemplate>
                             <DataTemplate DataType="vm:CardViewModel">
-                                <LayoutTransformControl LayoutTransform="rotate(-90deg)">
+                                <LayoutTransformControl LayoutTransform="rotate(90deg)">
                                     <ContentControl Content="{Binding}" />
                                 </LayoutTransformControl>
                             </DataTemplate>
