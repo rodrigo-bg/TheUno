@@ -17,12 +17,12 @@ public class Deck
         Reset();
     }
 
-    public int GetDrawPileCount()
+    public int GetDrawPileCount() // Numero de cartas en la pila boca abajo
     {
         return _drawPile.Count;
     }
 
-    public int GetDiscardPileCount()
+    public int GetDiscardPileCount() // Numero de cartas en la pila boca arriba
     {
         return _discardPile.Count;
     }
@@ -36,7 +36,7 @@ public class Deck
         return _discardPile[_discardPile.Count - 1];
     }
 
-    public void Reset()
+    public void Reset() // Limpia por completo la baraja y vuelve a crear las 108 cartas
     {
         _drawPile.Clear();
         _discardPile.Clear();
@@ -82,7 +82,7 @@ public class Deck
         Shuffle();
     }
 
-    public void Shuffle()
+    public void Shuffle() // Algoritmo estandar de mezcla de barajas
     {
         for (int i = _drawPile.Count - 1; i > 0; i--)
         {
@@ -95,7 +95,7 @@ public class Deck
         }
     }
 
-    public Card? Draw()
+    public Card? Draw() // 
     {
         if (_drawPile.Count == 0)
         {
