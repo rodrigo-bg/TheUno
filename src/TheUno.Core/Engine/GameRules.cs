@@ -51,4 +51,39 @@ public class GameRules
         // Si no cumple ninguna condición anterior, la jugada es ilegal
         return false;
     }
+    
+    public bool CanPlayWildDrawFour(List<Card> playerHand, CardColor activeColor)
+    {
+        for (int i = 0; i < playerHand.Count; i++)
+        {
+            Card currentCard = playerHand[i];
+
+            // Si tiene una carta con el color activo (que no sea un comodín sin color), el +4 no es legal
+            if (currentCard.Color == activeColor && currentCard.Color != CardColor.None)
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+    
+    public bool HasAnyLegalPlay(List<Card> playerHand, Card topCard, CardColor activeColor)
+    {
+        if (playerHand == null || topCard == null)
+        {
+            return false;
+        }
+
+        for (int i = 0; i < playerHand.Count; i++)
+        {
+            Card card = playerHand[i];
+            if (IsPlayLegal(card, topCard, activeColor, playerHand))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
 }
