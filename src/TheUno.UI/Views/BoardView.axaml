@@ -409,7 +409,7 @@
                                    StrokeDashArray="4,3"
                                    RadiusX="6" RadiusY="6" />
                         <Border CornerRadius="6" ClipToBounds="True" BoxShadow="0 4 12 0 #88000000">
-                            <Image Source="{Binding TopDiscard.Image}" Stretch="UniformToFill" />
+                            <Image Source="{Binding TopDiscardCard.Image}" Stretch="UniformToFill" />
                         </Border>
                     </Panel>
                     <TextBlock Classes="zoneLabel" Text="Descarte" />
@@ -550,8 +550,8 @@
                 </StackPanel>
             </Border>
         </Panel>
-        <!-- Pantalla de victoria: encima de todo, con el nombre del ganador y dos opciones -->
-        <Panel IsVisible="{Binding IsVictoryVisible}" Background="#CC000000">
+        <!-- Pantalla de victoria: con el nombre del ganador y dos opciones -->
+        <Panel IsVisible="{Binding IsVictoryScreenOpen}" Background="#CC000000">
             <Border Background="#3A2213"
                     BorderBrush="Black"
                     BorderThickness="6"
