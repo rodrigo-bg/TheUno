@@ -43,16 +43,9 @@
             <Setter Property="CornerRadius" Value="12" />
             <Setter Property="Padding" Value="12" />
             <Setter Property="Margin" Value="12" />
-            <!-- Borde transparente del mismo grosor que el del turno activo para que nada se mueva al cambiar -->
-            <Setter Property="BorderThickness" Value="4" />
-            <Setter Property="BorderBrush" Value="Transparent" />
         </Style>
 
-        <!-- Turno activo: marco y nombre en amarillo; las manos de los demás se oscurecen -->
-        <Style Selector="Border.playerZone.active">
-            <Setter Property="BorderBrush" Value="#E6B400" />
-            <Setter Property="Background" Value="#55000000" />
-        </Style>
+        <!-- Turno activo: el nombre va en amarillo (más abajo) y las manos de los demás se oscurecen -->
         <Style Selector="Border.cardShade">
             <Setter Property="Background" Value="#73000000" />
             <Setter Property="IsVisible" Value="False" />
