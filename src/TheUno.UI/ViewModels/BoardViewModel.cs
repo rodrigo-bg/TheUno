@@ -63,8 +63,8 @@ public partial class BoardViewModel : ViewModelBase
         _activeColor = _topDiscard.ColorCode ?? 'r';
 
         // Datos de ejemplo: la partida empieza con el turno del Jugador 1.
-        _activePlayer = Player2;
-        Player2.IsActive = true;
+        _activePlayer = Player1;
+        Player1.IsActive = true;
     }
 
     /// <summary>Constructor para el diseñador de Rider/Avalonia.</summary>
