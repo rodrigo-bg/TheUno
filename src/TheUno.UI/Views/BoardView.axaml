@@ -18,12 +18,16 @@
     <UserControl.DataTemplates>
         <!-- Carta reutilizable: muestra la imagen correspondiente con esquinas ligeramente redondeadas -->
         <DataTemplate DataType="vm:CardViewModel">
-            <Border Classes="card" CornerRadius="4" ClipToBounds="True" BoxShadow="0 2 6 0 #66000000">
-                <Panel>
-                    <Image Source="{Binding Image}" Stretch="UniformToFill" />
-                    <!-- Capa negra que oscurece la carta cuando no es el turno de su jugador -->
-                    <Border Classes="cardShade" />
-                </Panel>
+            <!-- El borde exterior dibuja la sombra y el contorno; el interior recorta la imagen
+                 (si fuera uno solo, el recorte también cortaría la sombra) -->
+            <Border Classes="card" CornerRadius="4">
+                <Border CornerRadius="4" ClipToBounds="True">
+                    <Panel>
+                        <Image Source="{Binding Image}" Stretch="UniformToFill" />
+                        <!-- Capa negra que oscurece la carta cuando no es el turno de su jugador -->
+                        <Border Classes="cardShade" />
+                    </Panel>
+                </Border>
             </Border>
         </DataTemplate>
     </UserControl.DataTemplates>
@@ -105,6 +109,41 @@
         </Style>
         <Style Selector="Button.drawPile:pressed">
             <Setter Property="RenderTransform" Value="scale(0.97)" />
+        </Style>
+
+        <!-- Sombra base de las cartas -->
+        <Style Selector="Border.card">
+            <Setter Property="BoxShadow" Value="0 2 6 0 #66000000" />
+        </Style>
+
+        <!-- Hover: el efecto va en el contenedor de cada carta de la mano (hijo directo del ItemsControl)
+             y no en la carta, porque las cartas laterales están dentro de un control que las gira
+             y recorta todo lo que sale de su espacio. -->
+        <Style Selector="ItemsControl > ContentPresenter">
+            <Setter Property="CornerRadius" Value="4" />
+            <Setter Property="RenderTransform" Value="translate(0px, 0px)" />
+            <Setter Property="Transitions">
+                <Transitions>
+                    <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.12" />
+                </Transitions>
+            </Setter>
+        </Style>
+        <!-- Solo en la mano del jugador en turno: contorno amarillo, se dibuja encima de sus
+             vecinas y se mueve hacia el centro de la mesa -->
+        <Style Selector="Border.playerZone.active ItemsControl > ContentPresenter:pointerover">
+            <Setter Property="BoxShadow" Value="0 0 0 4 #E6B400, 0 6 10 0 #99000000" />
+            <Setter Property="ZIndex" Value="1" />
+        </Style>
+        <!-- Sin esto el panel horizontal estira el contenedor a toda la altura y el contorno queda más alto que la carta -->
+        <Style Selector="ItemsControl.bottomHand > ContentPresenter">
+            <Setter Property="VerticalAlignment" Value="Top" />
+        </Style>
+        <Style Selector="Border.playerZone.active ItemsControl.bottomHand > ContentPresenter:pointerover">
+            <Setter Property="RenderTransform" Value="translate(0px, -14px)" />
+        </Style>
+        <!-- Manos laterales: +X apunta al centro (la del Jugador 3 está girada 180°) -->
+        <Style Selector="Border.playerZone.active ItemsControl.sideHand > ContentPresenter:pointerover">
+            <Setter Property="RenderTransform" Value="translate(14px, 0px)" />
         </Style>
 
         <!-- Tamaños de carta por zona -->
@@ -254,7 +293,8 @@
                 <TextBlock DockPanel.Dock="Top" Classes="pixelText playerName" Text="{Binding Player1.Name}" />
                 <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
                     <ItemsControl Classes="bottomHand" ItemsSource="{Binding Player1.Hand}"
-                                  IsEnabled="{Binding Player1.IsActive}">
+                                  IsEnabled="{Binding Player1.IsActive}"
+                                  Padding="0,16,0,0">
                         <ItemsControl.ItemsPanel>
                             <ItemsPanelTemplate>
                                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="8" />
