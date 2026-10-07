@@ -42,10 +42,16 @@ public partial class BoardViewModel : ViewModelBase
     [ObservableProperty]
     private bool _isExitDialogOpen;
 
+    /// <summary>Muestra el selector de color que aparece al tirar un comodín o un +4.</summary>
+    [ObservableProperty]
+    private bool _isColorPickerOpen;
+
+    // Qué hacer con el color elegido (cuando exista el motor: llamar a PlayCard con ese color).
+    private Action<CardColor>? _onColorChosen;
+
     public BoardViewModel(Action onExitToMenu)
     {
         _onExitToMenu = onExitToMenu;
-
 
         Player1 = new PlayerViewModel("Jugador 1");
         Player2 = new PlayerViewModel("Jugador 2");
@@ -95,6 +101,26 @@ public partial class BoardViewModel : ViewModelBase
     {
         IsExitDialogOpen = false;
         _onExitToMenu();
+    }
+
+    /// <summary>
+    /// Abre el selector de color. El juego no continúa hasta elegir uno: no hay opción de cancelar.
+    /// </summary>
+    public void AskForColor(Action<CardColor>? onChosen = null)
+    {
+        _onColorChosen = onChosen;
+        IsColorPickerOpen = true;
+    }
+
+    [RelayCommand]
+    private void ChooseColor(CardColor color)
+    {
+        IsColorPickerOpen = false;
+        ActiveColor = CardViewModel.GetColorCode(color) ?? ActiveColor;
+
+        var onChosen = _onColorChosen;
+        _onColorChosen = null;
+        onChosen?.Invoke(color);
     }
 
     public bool IsCounterClockwise => !IsClockwise;

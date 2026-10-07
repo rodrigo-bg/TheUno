@@ -33,7 +33,7 @@ public class CardViewModel : ViewModelBase
 
     public static Bitmap BackImage => LoadBitmap("back.png");
 
-    private static char? GetColorCode(CardColor color) => color switch
+    public static char? GetColorCode(CardColor color) => color switch
     {
         CardColor.Red => 'r',
         CardColor.Green => 'g',

@@ -3,6 +3,7 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:vm="using:TheUno.UI.ViewModels"
+             xmlns:core="using:TheUno.Core.Models"
              mc:Ignorable="d" d:DesignWidth="1280" d:DesignHeight="800"
              x:Class="TheUno.UI.Views.BoardView"
              x:DataType="vm:BoardViewModel"
@@ -190,6 +191,35 @@
         <Style Selector="Button.confirm:pointerover /template/ ContentPresenter#PART_ContentPresenter">
             <Setter Property="Background" Value="#FF4040" />
         </Style>
+
+        <!-- Selector de color: cuadrantes con el color de la carta, borde negro grueso y blanco al pasar el mouse -->
+        <Style Selector="Button.colorQuadrant">
+            <Setter Property="Width" Value="140" />
+            <Setter Property="Height" Value="140" />
+            <Setter Property="CornerRadius" Value="0" />
+            <Setter Property="BorderBrush" Value="Black" />
+            <Setter Property="BorderThickness" Value="5" />
+            <Setter Property="Foreground" Value="White" />
+            <Setter Property="FontSize" Value="14" />
+            <Setter Property="HorizontalContentAlignment" Value="Center" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="RenderTransform" Value="translate(0px, 0px)" />
+        </Style>
+        <!-- Fluent cambia el fondo al pasar el mouse; aquí se conserva el color de cada cuadrante -->
+        <Style Selector="Button.colorQuadrant:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="{TemplateBinding Background}" />
+            <Setter Property="BorderBrush" Value="White" />
+            <Setter Property="Foreground" Value="White" />
+        </Style>
+        <Style Selector="Button.colorQuadrant:pressed">
+            <Setter Property="RenderTransform" Value="translate(3px, 3px)" />
+        </Style>
+        <Style Selector="TextBlock.quadrantLabel">
+            <Setter Property="Effect">
+                <DropShadowEffect OffsetX="2" OffsetY="2" BlurRadius="0" Color="Black" Opacity="1" />
+            </Setter>
+        </Style>
     </UserControl.Styles>
 
     <Panel>
@@ -339,6 +369,53 @@
                 </DockPanel>
             </Border>
         </Grid>
+
+        <!-- Selector de color para comodines: 4 cuadrantes en el mismo orden que el dibujo del comodín.
+             No tiene botón de cancelar porque el juego no puede seguir sin un color. -->
+        <Panel IsVisible="{Binding IsColorPickerOpen}" Background="#B3000000">
+            <Border Background="#3A2213"
+                    BorderBrush="Black"
+                    BorderThickness="6"
+                    Padding="40,32"
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Center"
+                    BoxShadow="10 10 0 0 #000000">
+                <StackPanel Spacing="28">
+                    <TextBlock Classes="pixelText" FontSize="18" Text="ELIGE UN COLOR">
+                        <TextBlock.Effect>
+                            <DropShadowEffect OffsetX="3" OffsetY="3" BlurRadius="0" Color="Black" Opacity="1" />
+                        </TextBlock.Effect>
+                    </TextBlock>
+                    <Grid ColumnDefinitions="Auto,Auto" RowDefinitions="Auto,Auto"
+                          HorizontalAlignment="Center">
+                        <Button Grid.Row="0" Grid.Column="0" Classes="colorQuadrant"
+                                Background="#FF0000"
+                                Command="{Binding ChooseColorCommand}"
+                                CommandParameter="{x:Static core:CardColor.Red}">
+                            <TextBlock Classes="quadrantLabel" Text="ROJO" />
+                        </Button>
+                        <Button Grid.Row="0" Grid.Column="1" Classes="colorQuadrant"
+                                Background="#0020FF"
+                                Command="{Binding ChooseColorCommand}"
+                                CommandParameter="{x:Static core:CardColor.Blue}">
+                            <TextBlock Classes="quadrantLabel" Text="AZUL" />
+                        </Button>
+                        <Button Grid.Row="1" Grid.Column="0" Classes="colorQuadrant"
+                                Background="#E6B400"
+                                Command="{Binding ChooseColorCommand}"
+                                CommandParameter="{x:Static core:CardColor.Yellow}">
+                            <TextBlock Classes="quadrantLabel" Text="AMARILLO" />
+                        </Button>
+                        <Button Grid.Row="1" Grid.Column="1" Classes="colorQuadrant"
+                                Background="#40FF00"
+                                Command="{Binding ChooseColorCommand}"
+                                CommandParameter="{x:Static core:CardColor.Green}">
+                            <TextBlock Classes="quadrantLabel" Text="VERDE" />
+                        </Button>
+                    </Grid>
+                </StackPanel>
+            </Border>
+        </Panel>
 
         <!-- Alerta para salir: capa oscura sobre todo el tablero (bloquea los clics) con el aviso al centro -->
         <Panel IsVisible="{Binding IsExitDialogOpen}" Background="#B3000000">
