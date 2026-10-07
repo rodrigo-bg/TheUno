@@ -103,6 +103,14 @@ public partial class BoardViewModel : ViewModelBase
         _onExitToMenu();
     }
 
+    /// <summary>El jugador dueño del botón ¡UNO! canta UNO.</summary>
+    [RelayCommand]
+    private void CallUno(PlayerViewModel player)
+    {
+        // Cuando exista el motor, aquí se llamará a CallUno() de IGameEngine.
+        player.HasCalledUno = true;
+    }
+
     /// <summary>
     /// Abre el selector de color. El juego no continúa hasta elegir uno: no hay opción de cancelar.
     /// </summary>

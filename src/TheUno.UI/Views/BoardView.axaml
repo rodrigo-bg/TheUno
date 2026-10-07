@@ -220,6 +220,57 @@
                 <DropShadowEffect OffsetX="2" OffsetY="2" BlurRadius="0" Color="Black" Opacity="1" />
             </Setter>
         </Style>
+
+        <!-- Nombre del jugador con la etiqueta "¡UNO!" a un lado cuando ya lo cantó -->
+        <Style Selector="StackPanel.playerHeader">
+            <Setter Property="Orientation" Value="Horizontal" />
+            <Setter Property="HorizontalAlignment" Value="Center" />
+            <Setter Property="Spacing" Value="6" />
+            <Setter Property="Margin" Value="0,0,0,12" />
+        </Style>
+        <Style Selector="StackPanel.playerHeader TextBlock.playerName">
+            <Setter Property="Margin" Value="0" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+        </Style>
+        <Style Selector="Border.unoTag">
+            <Setter Property="Background" Value="#FF0000" />
+            <Setter Property="BorderBrush" Value="Black" />
+            <Setter Property="BorderThickness" Value="2" />
+            <Setter Property="Padding" Value="4,3" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+        </Style>
+        <Style Selector="Border.unoTag TextBlock">
+            <Setter Property="FontSize" Value="9" />
+            <Setter Property="Foreground" Value="White" />
+        </Style>
+
+        <!-- Botón ¡UNO!: rojo y pequeño a propósito, para que haya que apuntarle bien -->
+        <Style Selector="Button.unoButton">
+            <Setter Property="Background" Value="#FF0000" />
+            <Setter Property="Foreground" Value="White" />
+            <Setter Property="BorderBrush" Value="Black" />
+            <Setter Property="BorderThickness" Value="3" />
+            <Setter Property="CornerRadius" Value="0" />
+            <Setter Property="FontSize" Value="10" />
+            <Setter Property="Width" Value="70" />
+            <Setter Property="Height" Value="30" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="HorizontalContentAlignment" Value="Center" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="RenderTransform" Value="translate(0px, 0px)" />
+            <Setter Property="Effect">
+                <DropShadowEffect OffsetX="3" OffsetY="3" BlurRadius="0" Color="Black" Opacity="1" />
+            </Setter>
+        </Style>
+        <Style Selector="Button.unoButton:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="#FF4040" />
+            <Setter Property="BorderBrush" Value="White" />
+            <Setter Property="Foreground" Value="White" />
+        </Style>
+        <Style Selector="Button.unoButton:pressed">
+            <Setter Property="RenderTransform" Value="translate(2px, 2px)" />
+        </Style>
     </UserControl.Styles>
 
     <Panel>
@@ -235,7 +286,12 @@
             <Border Grid.Row="1" Grid.Column="0" Classes="playerZone"
                     Classes.active="{Binding Player2.IsActive}">
                 <DockPanel>
-                    <TextBlock DockPanel.Dock="Top" Classes="pixelText playerName" Text="{Binding Player2.Name}" />
+                    <StackPanel DockPanel.Dock="Top" Classes="playerHeader">
+                        <TextBlock Classes="pixelText playerName" Text="{Binding Player2.Name}" />
+                        <Border Classes="unoTag" IsVisible="{Binding Player2.HasCalledUno}">
+                            <TextBlock Text="¡UNO!" />
+                        </Border>
+                    </StackPanel>
                     <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
                         <ItemsControl Classes="sideHand" ItemsSource="{Binding Player2.Hand}"
                                       IsEnabled="{Binding Player2.IsActive}">
@@ -260,7 +316,12 @@
             <Border Grid.Row="1" Grid.Column="2" Classes="playerZone"
                     Classes.active="{Binding Player3.IsActive}">
                 <DockPanel>
-                    <TextBlock DockPanel.Dock="Top" Classes="pixelText playerName" Text="{Binding Player3.Name}" />
+                    <StackPanel DockPanel.Dock="Top" Classes="playerHeader">
+                        <TextBlock Classes="pixelText playerName" Text="{Binding Player3.Name}" />
+                        <Border Classes="unoTag" IsVisible="{Binding Player3.HasCalledUno}">
+                            <TextBlock Text="¡UNO!" />
+                        </Border>
+                    </StackPanel>
                     <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
                         <!-- Girado 180° con cartas a 90°: cada carta queda orientada hacia el Jugador 3
                              y la franja visible es la parte superior, donde está el número -->
@@ -348,13 +409,46 @@
                 </StackPanel>
             </Grid>
 
+            <!-- Botones ¡UNO!: uno por jugador, frente a sus cartas (hacia el centro de la mesa).
+                 Solo aparecen cuando ese jugador tiene 1 carta y todavía no ha cantado UNO.
+                 Los de los jugadores 2 y 3 quedan a la altura de su única carta. -->
+            <Button Grid.Row="1" Grid.Column="1"
+                    Classes="unoButton"
+                    HorizontalAlignment="Center" VerticalAlignment="Bottom"
+                    Margin="0,0,0,8"
+                    Content="¡UNO!"
+                    IsVisible="{Binding Player1.ShowUnoButton}"
+                    Command="{Binding CallUnoCommand}"
+                    CommandParameter="{Binding Player1}" />
+            <Button Grid.Row="1" Grid.Column="1"
+                    Classes="unoButton"
+                    HorizontalAlignment="Left" VerticalAlignment="Top"
+                    Margin="6,66,0,0"
+                    Content="¡UNO!"
+                    IsVisible="{Binding Player2.ShowUnoButton}"
+                    Command="{Binding CallUnoCommand}"
+                    CommandParameter="{Binding Player2}" />
+            <Button Grid.Row="1" Grid.Column="1"
+                    Classes="unoButton"
+                    HorizontalAlignment="Right" VerticalAlignment="Top"
+                    Margin="0,66,6,0"
+                    Content="¡UNO!"
+                    IsVisible="{Binding Player3.ShowUnoButton}"
+                    Command="{Binding CallUnoCommand}"
+                    CommandParameter="{Binding Player3}" />
+
             <!-- Jugador 1 (Abajo) -->
             <Border Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="3"
                     Classes="playerZone"
                     Classes.active="{Binding Player1.IsActive}"
                     Height="220">
                 <DockPanel>
-                    <TextBlock DockPanel.Dock="Top" Classes="pixelText playerName" Text="{Binding Player1.Name}" />
+                    <StackPanel DockPanel.Dock="Top" Classes="playerHeader">
+                        <TextBlock Classes="pixelText playerName" Text="{Binding Player1.Name}" />
+                        <Border Classes="unoTag" IsVisible="{Binding Player1.HasCalledUno}">
+                            <TextBlock Text="¡UNO!" />
+                        </Border>
+                    </StackPanel>
                     <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
                         <ItemsControl Classes="bottomHand" ItemsSource="{Binding Player1.Hand}"
                                       IsEnabled="{Binding Player1.IsActive}"
