@@ -19,7 +19,11 @@
         <!-- Carta reutilizable: muestra la imagen correspondiente con esquinas ligeramente redondeadas -->
         <DataTemplate DataType="vm:CardViewModel">
             <Border Classes="card" CornerRadius="4" ClipToBounds="True" BoxShadow="0 2 6 0 #66000000">
-                <Image Source="{Binding Image}" Stretch="UniformToFill" />
+                <Panel>
+                    <Image Source="{Binding Image}" Stretch="UniformToFill" />
+                    <!-- Capa negra que oscurece la carta cuando no es el turno de su jugador -->
+                    <Border Classes="cardShade" />
+                </Panel>
             </Border>
         </DataTemplate>
     </UserControl.DataTemplates>
@@ -35,6 +39,22 @@
             <Setter Property="CornerRadius" Value="12" />
             <Setter Property="Padding" Value="12" />
             <Setter Property="Margin" Value="12" />
+            <!-- Borde transparente del mismo grosor que el del turno activo para que nada se mueva al cambiar -->
+            <Setter Property="BorderThickness" Value="4" />
+            <Setter Property="BorderBrush" Value="Transparent" />
+        </Style>
+
+        <!-- Turno activo: marco y nombre en amarillo; las manos de los demás se oscurecen -->
+        <Style Selector="Border.playerZone.active">
+            <Setter Property="BorderBrush" Value="#E6B400" />
+            <Setter Property="Background" Value="#55000000" />
+        </Style>
+        <Style Selector="Border.cardShade">
+            <Setter Property="Background" Value="#73000000" />
+            <Setter Property="IsVisible" Value="False" />
+        </Style>
+        <Style Selector="ItemsControl:disabled Border.cardShade">
+            <Setter Property="IsVisible" Value="True" />
         </Style>
         <!-- Textos estilo 8 bits: fuente pixel y sombra dura sin desenfoque -->
         <Style Selector="TextBlock.pixelText">
@@ -49,6 +69,10 @@
             <Setter Property="Effect">
                 <DropShadowEffect OffsetX="2" OffsetY="2" BlurRadius="0" Color="Black" Opacity="1" />
             </Setter>
+        </Style>
+        <!-- Va después de pixelText para que el amarillo del turno activo gane sobre el blanco -->
+        <Style Selector="Border.playerZone.active TextBlock.playerName">
+            <Setter Property="Foreground" Value="#E6B400" />
         </Style>
         <Style Selector="TextBlock.zoneLabel">
             <Setter Property="FontSize" Value="10" />
@@ -105,11 +129,13 @@
     <Grid RowDefinitions="Auto,*,Auto" ColumnDefinitions="240,*,240">
 
         <!-- Jugador 2 (Izquierda) -->
-        <Border Grid.Row="1" Grid.Column="0" Classes="playerZone">
+        <Border Grid.Row="1" Grid.Column="0" Classes="playerZone"
+                Classes.active="{Binding Player2.IsActive}">
             <DockPanel>
                 <TextBlock DockPanel.Dock="Top" Classes="pixelText playerName" Text="{Binding Player2.Name}" />
                 <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
-                    <ItemsControl Classes="sideHand" ItemsSource="{Binding Player2.Hand}">
+                    <ItemsControl Classes="sideHand" ItemsSource="{Binding Player2.Hand}"
+                                  IsEnabled="{Binding Player2.IsActive}">
                         <ItemsControl.ItemsPanel>
                             <ItemsPanelTemplate>
                                 <StackPanel Orientation="Vertical" HorizontalAlignment="Center" Spacing="-30" />
@@ -128,13 +154,15 @@
         </Border>
 
         <!-- Jugador 3 (Derecha) -->
-        <Border Grid.Row="1" Grid.Column="2" Classes="playerZone">
+        <Border Grid.Row="1" Grid.Column="2" Classes="playerZone"
+                Classes.active="{Binding Player3.IsActive}">
             <DockPanel>
                 <TextBlock DockPanel.Dock="Top" Classes="pixelText playerName" Text="{Binding Player3.Name}" />
                 <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
                     <!-- Girado 180° con cartas a 90°: cada carta queda orientada hacia el Jugador 3
                          y la franja visible es la parte superior, donde está el número -->
                     <ItemsControl Classes="sideHand" ItemsSource="{Binding Player3.Hand}"
+                                  IsEnabled="{Binding Player3.IsActive}"
                                   VerticalAlignment="Top"
                                   RenderTransform="rotate(180deg)">
                         <ItemsControl.ItemsPanel>
@@ -220,11 +248,13 @@
         <!-- Jugador 1 (Abajo) -->
         <Border Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="3"
                 Classes="playerZone"
+                Classes.active="{Binding Player1.IsActive}"
                 Height="220">
             <DockPanel>
                 <TextBlock DockPanel.Dock="Top" Classes="pixelText playerName" Text="{Binding Player1.Name}" />
                 <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
-                    <ItemsControl Classes="bottomHand" ItemsSource="{Binding Player1.Hand}">
+                    <ItemsControl Classes="bottomHand" ItemsSource="{Binding Player1.Hand}"
+                                  IsEnabled="{Binding Player1.IsActive}">
                         <ItemsControl.ItemsPanel>
                             <ItemsPanelTemplate>
                                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="8" />

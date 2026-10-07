@@ -32,6 +32,10 @@ public partial class BoardViewModel : ViewModelBase
     [ObservableProperty]
     private CardViewModel _topDiscard;
 
+    /// <summary>Jugador en turno. Al cambiar, se actualiza qué zona se resalta y qué manos se atenúan.</summary>
+    [ObservableProperty]
+    private PlayerViewModel _activePlayer;
+
     public BoardViewModel()
     {
         Player1 = new PlayerViewModel("Jugador 1");
@@ -48,6 +52,10 @@ public partial class BoardViewModel : ViewModelBase
 
         _topDiscard = new CardViewModel(NumberCard());
         _activeColor = _topDiscard.ColorCode ?? 'r';
+
+        // Datos de ejemplo: la partida empieza con el turno del Jugador 1.
+        _activePlayer = Player1;
+        Player1.IsActive = true;
     }
 
     public PlayerViewModel Player1 { get; }
@@ -55,6 +63,12 @@ public partial class BoardViewModel : ViewModelBase
     public PlayerViewModel Player3 { get; }
 
     public Bitmap DrawPileImage => CardViewModel.BackImage;
+
+    partial void OnActivePlayerChanged(PlayerViewModel? oldValue, PlayerViewModel newValue)
+    {
+        if (oldValue is not null) oldValue.IsActive = false;
+        newValue.IsActive = true;
+    }
 
     public bool IsCounterClockwise => !IsClockwise;
 
