@@ -1,8 +1,9 @@
 <Application xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              x:Class="TheUno.UI.App"
-             RequestedThemeVariant="Default">
-             <!-- "Default" ThemeVariant follows system theme variant. "Dark" or "Light" are other available options. -->
+             RequestedThemeVariant="Dark">
+    <!-- Tema oscuro fijo: así los controles de Fluent (tooltips, barras de desplazamiento) combinan
+         con el estilo 8 bits sin importar si Windows está en modo claro u oscuro -->
 
     <Application.Resources>
         <!-- Fuente pixel art (Press Start 2P, licencia OFL en Assets/Fonts/OFL.txt) -->
