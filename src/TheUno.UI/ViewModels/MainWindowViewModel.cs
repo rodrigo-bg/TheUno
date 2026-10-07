@@ -31,7 +31,8 @@ public partial class MainWindowViewModel : ViewModelBase
 
     private void StartGame()
     {
-        CurrentView = new BoardViewModel(ShowMenu);
+        // "Volver a jugar" en la pantalla de victoria vuelve a llamar a StartGame: partida nueva.
+        CurrentView = new BoardViewModel(ShowMenu, StartGame);
     }
 
     // Al regresar se crea un menú nuevo; la partida anterior se descarta.

@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using Avalonia.Media;
 using Avalonia.Media.Imaging;
+using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using TheUno.Core.Models;
@@ -21,6 +22,7 @@ public partial class BoardViewModel : ViewModelBase
 
     private readonly Random _random = new();
     private readonly Action _onExitToMenu;
+    private readonly Action _onPlayAgain;
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(ActiveColorBrush))]
@@ -49,9 +51,20 @@ public partial class BoardViewModel : ViewModelBase
     // Qué hacer con el color elegido (cuando exista el motor: llamar a PlayCard con ese color).
     private Action<CardColor>? _onColorChosen;
 
-    public BoardViewModel(Action onExitToMenu)
+    /// <summary>Muestra la pantalla de victoria (aparece 3 segundos después de que alguien gana).</summary>
+    [ObservableProperty]
+    private bool _isVictoryVisible;
+
+    /// <summary>Nombre del ganador en mayúsculas, para la pantalla de victoria.</summary>
+    [ObservableProperty]
+    private string _winnerName = string.Empty;
+
+    private bool _isGameOver;
+
+    public BoardViewModel(Action onExitToMenu, Action onPlayAgain)
     {
         _onExitToMenu = onExitToMenu;
+        _onPlayAgain = onPlayAgain;
 
         Player1 = new PlayerViewModel("Jugador 1");
         Player2 = new PlayerViewModel("Jugador 2");
@@ -74,7 +87,7 @@ public partial class BoardViewModel : ViewModelBase
     }
 
     /// <summary>Constructor para el diseñador de Rider/Avalonia.</summary>
-    public BoardViewModel() : this(() => { })
+    public BoardViewModel() : this(() => { }, () => { })
     {
     }
 
@@ -102,6 +115,29 @@ public partial class BoardViewModel : ViewModelBase
         IsExitDialogOpen = false;
         _onExitToMenu();
     }
+
+    /// <summary>
+    /// Termina la partida: tras una pausa de 3 segundos (para que se vea la última carta en la mesa)
+    /// aparece la pantalla de victoria con el nombre del ganador.
+    /// Cuando exista el motor, se llamará desde su evento OnGameOver.
+    /// </summary>
+    public void ShowVictory(PlayerViewModel winner)
+    {
+        if (_isGameOver) return;
+        _isGameOver = true;
+
+        DispatcherTimer.RunOnce(() =>
+        {
+            WinnerName = winner.Name.ToUpperInvariant();
+            IsVictoryVisible = true;
+        }, TimeSpan.FromSeconds(3));
+    }
+
+    [RelayCommand]
+    private void BackToMenu() => _onExitToMenu();
+
+    [RelayCommand]
+    private void PlayAgain() => _onPlayAgain();
 
     /// <summary>El jugador dueño del botón ¡UNO! canta UNO.</summary>
     [RelayCommand]

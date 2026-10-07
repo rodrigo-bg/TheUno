@@ -4,6 +4,7 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:vm="using:TheUno.UI.ViewModels"
              xmlns:core="using:TheUno.Core.Models"
+             xmlns:controls="using:TheUno.UI.Controls"
              mc:Ignorable="d" d:DesignWidth="1280" d:DesignHeight="800"
              x:Class="TheUno.UI.Views.BoardView"
              x:DataType="vm:BoardViewModel"
@@ -270,6 +271,12 @@
         </Style>
         <Style Selector="Button.unoButton:pressed">
             <Setter Property="RenderTransform" Value="translate(2px, 2px)" />
+        </Style>
+        <!-- Pantalla de victoria: botones del mismo tamaño -->
+        <Style Selector="Button.victoryButton">
+            <Setter Property="FontSize" Value="14" />
+            <Setter Property="Padding" Value="20,18" />
+            <Setter Property="Width" Value="320" />
         </Style>
     </UserControl.Styles>
 
@@ -539,6 +546,39 @@
                         <Button Classes="pixelButton dialogButton confirm"
                                 Content="Sí, estoy seguro"
                                 Command="{Binding ConfirmExitCommand}" />
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+        </Panel>
+        <!-- Pantalla de victoria: encima de todo, con el nombre del ganador y dos opciones -->
+        <Panel IsVisible="{Binding IsVictoryVisible}" Background="#CC000000">
+            <Border Background="#3A2213"
+                    BorderBrush="Black"
+                    BorderThickness="6"
+                    Padding="64,48"
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Center"
+                    BoxShadow="10 10 0 0 #000000">
+                <StackPanel Spacing="20">
+                    <controls:OutlinedText Text="¡¡GANASTE!!"
+                                           FontSize="50"
+                                           Fill="#E6B400"
+                                           Stroke="White"
+                                           StrokeThickness="1"
+                                           ShadowOffset="5"
+                                           HorizontalAlignment="Center" />
+                    <TextBlock Classes="pixelText" FontSize="22" Text="{Binding WinnerName}">
+                        <TextBlock.Effect>
+                            <DropShadowEffect OffsetX="3" OffsetY="3" BlurRadius="0" Color="Black" Opacity="1" />
+                        </TextBlock.Effect>
+                    </TextBlock>
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="32" Margin="0,28,0,0">
+                        <Button Classes="pixelButton victoryButton cancel"
+                                Content="Regresar al menú"
+                                Command="{Binding BackToMenuCommand}" />
+                        <Button Classes="pixelButton victoryButton confirm"
+                                Content="Volver a jugar"
+                                Command="{Binding PlayAgainCommand}" />
                     </StackPanel>
                 </StackPanel>
             </Border>
