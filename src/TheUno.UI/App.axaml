@@ -13,5 +13,6 @@
 
     <Application.Styles>
         <FluentTheme />
+        <StyleInclude Source="avares://TheUno.UI/Styles/PixelStyles.axaml" />
     </Application.Styles>
-</Application>
+</Application>

@@ -163,146 +163,221 @@
         <Style Selector="Canvas.directionArrow.counterClockwise">
             <Setter Property="RenderTransform" Value="scaleX(-1)" />
         </Style>
+
+        <!-- Botón para regresar al menú y botones de la alerta (base en Styles/PixelStyles.axaml) -->
+        <Style Selector="Button.backButton">
+            <Setter Property="Background" Value="#222222" />
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="Padding" Value="14,12" />
+            <Setter Property="BorderThickness" Value="4" />
+            <Setter Property="HorizontalAlignment" Value="Left" />
+            <Setter Property="VerticalAlignment" Value="Top" />
+            <Setter Property="Margin" Value="20,20,0,0" />
+            <Setter Property="Effect">
+                <DropShadowEffect OffsetX="4" OffsetY="4" BlurRadius="0" Color="Black" Opacity="1" />
+            </Setter>
+        </Style>
+        <Style Selector="Button.backButton:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="#444444" />
+        </Style>
+        <Style Selector="Button.dialogButton">
+            <Setter Property="FontSize" Value="14" />
+            <Setter Property="Padding" Value="20,18" />
+            <Setter Property="MinWidth" Value="260" />
+        </Style>
+        <Style Selector="Button.cancel">
+            <Setter Property="Background" Value="#0020FF" />
+        </Style>
+        <Style Selector="Button.cancel:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="#4060FF" />
+        </Style>
+        <Style Selector="Button.confirm">
+            <Setter Property="Background" Value="#FF0000" />
+        </Style>
+        <Style Selector="Button.confirm:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="#FF4040" />
+        </Style>
     </UserControl.Styles>
 
-    <Grid RowDefinitions="Auto,*,Auto" ColumnDefinitions="240,*,240">
+    <Panel>
+        <Grid RowDefinitions="Auto,*,Auto" ColumnDefinitions="240,*,240">
 
-        <!-- Jugador 2 (Izquierda) -->
-        <Border Grid.Row="1" Grid.Column="0" Classes="playerZone"
-                Classes.active="{Binding Player2.IsActive}">
-            <DockPanel>
-                <TextBlock DockPanel.Dock="Top" Classes="pixelText playerName" Text="{Binding Player2.Name}" />
-                <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
-                    <ItemsControl Classes="sideHand" ItemsSource="{Binding Player2.Hand}"
-                                  IsEnabled="{Binding Player2.IsActive}">
-                        <ItemsControl.ItemsPanel>
-                            <ItemsPanelTemplate>
-                                <StackPanel Orientation="Vertical" HorizontalAlignment="Center" Spacing="-30" />
-                            </ItemsPanelTemplate>
-                        </ItemsControl.ItemsPanel>
-                        <ItemsControl.ItemTemplate>
-                            <DataTemplate DataType="vm:CardViewModel">
-                                <LayoutTransformControl LayoutTransform="rotate(90deg)">
-                                    <ContentControl Content="{Binding}" />
-                                </LayoutTransformControl>
-                            </DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                    </ItemsControl>
-                </ScrollViewer>
-            </DockPanel>
-        </Border>
+            <!-- Regresar al menú (pide confirmación porque se pierde la partida) -->
+            <Button Grid.Row="0" Grid.Column="0"
+                    Classes="pixelButton backButton"
+                    Content="← MENU"
+                    Command="{Binding RequestExitCommand}" />
 
-        <!-- Jugador 3 (Derecha) -->
-        <Border Grid.Row="1" Grid.Column="2" Classes="playerZone"
-                Classes.active="{Binding Player3.IsActive}">
-            <DockPanel>
-                <TextBlock DockPanel.Dock="Top" Classes="pixelText playerName" Text="{Binding Player3.Name}" />
-                <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
-                    <!-- Girado 180° con cartas a 90°: cada carta queda orientada hacia el Jugador 3
-                         y la franja visible es la parte superior, donde está el número -->
-                    <ItemsControl Classes="sideHand" ItemsSource="{Binding Player3.Hand}"
-                                  IsEnabled="{Binding Player3.IsActive}"
-                                  VerticalAlignment="Top"
-                                  RenderTransform="rotate(180deg)">
-                        <ItemsControl.ItemsPanel>
-                            <ItemsPanelTemplate>
-                                <StackPanel Orientation="Vertical" HorizontalAlignment="Center" Spacing="-30" />
-                            </ItemsPanelTemplate>
-                        </ItemsControl.ItemsPanel>
-                        <ItemsControl.ItemTemplate>
-                            <DataTemplate DataType="vm:CardViewModel">
-                                <LayoutTransformControl LayoutTransform="rotate(90deg)">
-                                    <ContentControl Content="{Binding}" />
-                                </LayoutTransformControl>
-                            </DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                    </ItemsControl>
-                </ScrollViewer>
-            </DockPanel>
-        </Border>
+            <!-- Jugador 2 (Izquierda) -->
+            <Border Grid.Row="1" Grid.Column="0" Classes="playerZone"
+                    Classes.active="{Binding Player2.IsActive}">
+                <DockPanel>
+                    <TextBlock DockPanel.Dock="Top" Classes="pixelText playerName" Text="{Binding Player2.Name}" />
+                    <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+                        <ItemsControl Classes="sideHand" ItemsSource="{Binding Player2.Hand}"
+                                      IsEnabled="{Binding Player2.IsActive}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <StackPanel Orientation="Vertical" HorizontalAlignment="Center" Spacing="-30" />
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate DataType="vm:CardViewModel">
+                                    <LayoutTransformControl LayoutTransform="rotate(90deg)">
+                                        <ContentControl Content="{Binding}" />
+                                    </LayoutTransformControl>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </ScrollViewer>
+                </DockPanel>
+            </Border>
 
-        <!-- Indicadores: color activo y dirección del turno, arriba al centro -->
-        <StackPanel Grid.Row="0" Grid.Column="1"
-                    Orientation="Horizontal"
-                    HorizontalAlignment="Center"
-                    Margin="0,16,0,0"
-                    Spacing="48">
-            <StackPanel>
-                <Ellipse Width="40" Height="40"
-                         Fill="{Binding ActiveColorBrush}"
-                         Stroke="White"
-                         StrokeThickness="3"
-                         HorizontalAlignment="Center" />
-                <TextBlock Classes="zoneLabel" Text="Color activo" />
+            <!-- Jugador 3 (Derecha) -->
+            <Border Grid.Row="1" Grid.Column="2" Classes="playerZone"
+                    Classes.active="{Binding Player3.IsActive}">
+                <DockPanel>
+                    <TextBlock DockPanel.Dock="Top" Classes="pixelText playerName" Text="{Binding Player3.Name}" />
+                    <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+                        <!-- Girado 180° con cartas a 90°: cada carta queda orientada hacia el Jugador 3
+                             y la franja visible es la parte superior, donde está el número -->
+                        <ItemsControl Classes="sideHand" ItemsSource="{Binding Player3.Hand}"
+                                      IsEnabled="{Binding Player3.IsActive}"
+                                      VerticalAlignment="Top"
+                                      RenderTransform="rotate(180deg)">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <StackPanel Orientation="Vertical" HorizontalAlignment="Center" Spacing="-30" />
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate DataType="vm:CardViewModel">
+                                    <LayoutTransformControl LayoutTransform="rotate(90deg)">
+                                        <ContentControl Content="{Binding}" />
+                                    </LayoutTransformControl>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </ScrollViewer>
+                </DockPanel>
+            </Border>
+
+            <!-- Indicadores: color activo y dirección del turno, arriba al centro -->
+            <StackPanel Grid.Row="0" Grid.Column="1"
+                        Orientation="Horizontal"
+                        HorizontalAlignment="Center"
+                        Margin="0,16,0,0"
+                        Spacing="48">
+                <StackPanel>
+                    <Ellipse Width="40" Height="40"
+                             Fill="{Binding ActiveColorBrush}"
+                             Stroke="White"
+                             StrokeThickness="3"
+                             HorizontalAlignment="Center" />
+                    <TextBlock Classes="zoneLabel" Text="Color activo" />
+                </StackPanel>
+
+                <StackPanel>
+                    <Viewbox Width="42" Height="42" HorizontalAlignment="Center">
+                        <Canvas Classes="directionArrow"
+                                Classes.counterClockwise="{Binding IsCounterClockwise}"
+                                Width="60" Height="60">
+                            <Path Data="M 30,6 A 24,24 0 1 1 6,30"
+                                  Stroke="White"
+                                  StrokeThickness="4"
+                                  StrokeLineCap="Round" />
+                            <Path Data="M 0,32 L 6,21 L 12,32 Z" Fill="White" />
+                        </Canvas>
+                    </Viewbox>
+                    <TextBlock Classes="zoneLabel" Text="{Binding DirectionText}" />
+                </StackPanel>
             </StackPanel>
 
-            <StackPanel>
-                <Viewbox Width="42" Height="42" HorizontalAlignment="Center">
-                    <Canvas Classes="directionArrow"
-                            Classes.counterClockwise="{Binding IsCounterClockwise}"
-                            Width="60" Height="60">
-                        <Path Data="M 30,6 A 24,24 0 1 1 6,30"
-                              Stroke="White"
-                              StrokeThickness="4"
-                              StrokeLineCap="Round" />
-                        <Path Data="M 0,32 L 6,21 L 12,32 Z" Fill="White" />
-                    </Canvas>
-                </Viewbox>
-                <TextBlock Classes="zoneLabel" Text="{Binding DirectionText}" />
-            </StackPanel>
-        </StackPanel>
+            <!-- Zona Central: pila de robo y pila de descarte -->
+            <Grid Grid.Row="1" Grid.Column="1"
+                  ColumnDefinitions="Auto,Auto"
+                  ColumnSpacing="36"
+                  HorizontalAlignment="Center"
+                  VerticalAlignment="Center">
 
-        <!-- Zona Central: pila de robo y pila de descarte -->
-        <Grid Grid.Row="1" Grid.Column="1"
-              ColumnDefinitions="Auto,Auto"
-              ColumnSpacing="36"
-              HorizontalAlignment="Center"
-              VerticalAlignment="Center">
+                <!-- Pila de robo -->
+                <StackPanel Grid.Column="0">
+                    <Button Classes="drawPile" ToolTip.Tip="Robar una carta">
+                        <Border Width="105" Height="165" CornerRadius="6" ClipToBounds="True">
+                            <Image Source="{Binding DrawPileImage}" Stretch="UniformToFill" />
+                        </Border>
+                    </Button>
+                    <TextBlock Classes="zoneLabel" Text="Robar" />
+                </StackPanel>
 
-            <!-- Pila de robo -->
-            <StackPanel Grid.Column="0">
-                <Button Classes="drawPile" ToolTip.Tip="Robar una carta">
-                    <Border Width="105" Height="165" CornerRadius="6" ClipToBounds="True">
-                        <Image Source="{Binding DrawPileImage}" Stretch="UniformToFill" />
-                    </Border>
-                </Button>
-                <TextBlock Classes="zoneLabel" Text="Robar" />
-            </StackPanel>
+                <!-- Pila de descarte -->
+                <StackPanel Grid.Column="1">
+                    <Panel Width="105" Height="165">
+                        <Rectangle Stroke="#99FFFFFF"
+                                   StrokeThickness="2"
+                                   StrokeDashArray="4,3"
+                                   RadiusX="6" RadiusY="6" />
+                        <Border CornerRadius="6" ClipToBounds="True" BoxShadow="0 4 12 0 #88000000">
+                            <Image Source="{Binding TopDiscard.Image}" Stretch="UniformToFill" />
+                        </Border>
+                    </Panel>
+                    <TextBlock Classes="zoneLabel" Text="Descarte" />
+                </StackPanel>
+            </Grid>
 
-            <!-- Pila de descarte -->
-            <StackPanel Grid.Column="1">
-                <Panel Width="105" Height="165">
-                    <Rectangle Stroke="#99FFFFFF"
-                               StrokeThickness="2"
-                               StrokeDashArray="4,3"
-                               RadiusX="6" RadiusY="6" />
-                    <Border CornerRadius="6" ClipToBounds="True" BoxShadow="0 4 12 0 #88000000">
-                        <Image Source="{Binding TopDiscard.Image}" Stretch="UniformToFill" />
-                    </Border>
-                </Panel>
-                <TextBlock Classes="zoneLabel" Text="Descarte" />
-            </StackPanel>
+            <!-- Jugador 1 (Abajo) -->
+            <Border Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="3"
+                    Classes="playerZone"
+                    Classes.active="{Binding Player1.IsActive}"
+                    Height="220">
+                <DockPanel>
+                    <TextBlock DockPanel.Dock="Top" Classes="pixelText playerName" Text="{Binding Player1.Name}" />
+                    <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
+                        <ItemsControl Classes="bottomHand" ItemsSource="{Binding Player1.Hand}"
+                                      IsEnabled="{Binding Player1.IsActive}"
+                                      Padding="0,16,0,0">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="8" />
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                        </ItemsControl>
+                    </ScrollViewer>
+                </DockPanel>
+            </Border>
         </Grid>
 
-        <!-- Jugador 1 (Abajo) -->
-        <Border Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="3"
-                Classes="playerZone"
-                Classes.active="{Binding Player1.IsActive}"
-                Height="220">
-            <DockPanel>
-                <TextBlock DockPanel.Dock="Top" Classes="pixelText playerName" Text="{Binding Player1.Name}" />
-                <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
-                    <ItemsControl Classes="bottomHand" ItemsSource="{Binding Player1.Hand}"
-                                  IsEnabled="{Binding Player1.IsActive}"
-                                  Padding="0,16,0,0">
-                        <ItemsControl.ItemsPanel>
-                            <ItemsPanelTemplate>
-                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="8" />
-                            </ItemsPanelTemplate>
-                        </ItemsControl.ItemsPanel>
-                    </ItemsControl>
-                </ScrollViewer>
-            </DockPanel>
-        </Border>
-    </Grid>
+        <!-- Alerta para salir: capa oscura sobre todo el tablero (bloquea los clics) con el aviso al centro -->
+        <Panel IsVisible="{Binding IsExitDialogOpen}" Background="#B3000000">
+            <Border Background="#3A2213"
+                    BorderBrush="Black"
+                    BorderThickness="6"
+                    Padding="48,40"
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Center"
+                    BoxShadow="10 10 0 0 #000000">
+                <StackPanel Spacing="40">
+                    <TextBlock Classes="pixelText"
+                               FontSize="18"
+                               LineHeight="34"
+                               TextAlignment="Center">
+                        <TextBlock.Effect>
+                            <DropShadowEffect OffsetX="3" OffsetY="3" BlurRadius="0" Color="Black" Opacity="1" />
+                        </TextBlock.Effect>
+                        <Run Text="¡¿Estás seguro que quieres salir," />
+                        <LineBreak />
+                        <Run Text="estás en pleno juego?!" />
+                    </TextBlock>
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="32">
+                        <Button Classes="pixelButton dialogButton cancel"
+                                Content="Cancelar"
+                                Command="{Binding CancelExitCommand}" />
+                        <Button Classes="pixelButton dialogButton confirm"
+                                Content="Sí, estoy seguro"
+                                Command="{Binding ConfirmExitCommand}" />
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+        </Panel>
+    </Panel>
 </UserControl>

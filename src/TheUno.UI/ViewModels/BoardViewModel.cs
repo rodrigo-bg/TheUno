@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using Avalonia.Media;
 using Avalonia.Media.Imaging;
 using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
 using TheUno.Core.Models;
 
 namespace TheUno.UI.ViewModels;
@@ -19,6 +20,7 @@ public partial class BoardViewModel : ViewModelBase
     private static readonly CardType[] ActionTypes = { CardType.Skip, CardType.Reverse, CardType.DrawTwo };
 
     private readonly Random _random = new();
+    private readonly Action _onExitToMenu;
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(ActiveColorBrush))]
@@ -36,8 +38,15 @@ public partial class BoardViewModel : ViewModelBase
     [ObservableProperty]
     private PlayerViewModel _activePlayer;
 
-    public BoardViewModel()
+    /// <summary>Muestra la alerta que confirma si se quiere abandonar la partida.</summary>
+    [ObservableProperty]
+    private bool _isExitDialogOpen;
+
+    public BoardViewModel(Action onExitToMenu)
     {
+        _onExitToMenu = onExitToMenu;
+
+
         Player1 = new PlayerViewModel("Jugador 1");
         Player2 = new PlayerViewModel("Jugador 2");
         Player3 = new PlayerViewModel("Jugador 3");
@@ -54,8 +63,13 @@ public partial class BoardViewModel : ViewModelBase
         _activeColor = _topDiscard.ColorCode ?? 'r';
 
         // Datos de ejemplo: la partida empieza con el turno del Jugador 1.
-        _activePlayer = Player1;
-        Player1.IsActive = true;
+        _activePlayer = Player2;
+        Player2.IsActive = true;
+    }
+
+    /// <summary>Constructor para el diseñador de Rider/Avalonia.</summary>
+    public BoardViewModel() : this(() => { })
+    {
     }
 
     public PlayerViewModel Player1 { get; }
@@ -68,6 +82,19 @@ public partial class BoardViewModel : ViewModelBase
     {
         if (oldValue is not null) oldValue.IsActive = false;
         newValue.IsActive = true;
+    }
+
+    [RelayCommand]
+    private void RequestExit() => IsExitDialogOpen = true;
+
+    [RelayCommand]
+    private void CancelExit() => IsExitDialogOpen = false;
+
+    [RelayCommand]
+    private void ConfirmExit()
+    {
+        IsExitDialogOpen = false;
+        _onExitToMenu();
     }
 
     public bool IsCounterClockwise => !IsClockwise;

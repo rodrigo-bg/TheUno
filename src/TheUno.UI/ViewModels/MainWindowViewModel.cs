@@ -17,7 +17,7 @@ public partial class MainWindowViewModel : ViewModelBase
     public MainWindowViewModel(MusicPlayer music)
     {
         _music = music;
-        _currentView = new MenuViewModel(StartGame);
+        _currentView = CreateMenu();
         PlayMusicFor(_currentView);
     }
 
@@ -27,8 +27,16 @@ public partial class MainWindowViewModel : ViewModelBase
     private void PlayMusicFor(ViewModelBase view) =>
         _music.Play(view is BoardViewModel ? MusicPlayer.BoardTrack : MusicPlayer.MenuTrack);
 
+    private MenuViewModel CreateMenu() => new(StartGame);
+
     private void StartGame()
     {
-        CurrentView = new BoardViewModel();
+        CurrentView = new BoardViewModel(ShowMenu);
+    }
+
+    // Al regresar se crea un menú nuevo; la partida anterior se descarta.
+    private void ShowMenu()
+    {
+        CurrentView = CreateMenu();
     }
 }
