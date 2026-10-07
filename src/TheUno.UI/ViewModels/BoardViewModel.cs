@@ -24,9 +24,10 @@ public partial class BoardViewModel : ViewModelBase
     private readonly Action _onExitToMenu;
     private readonly Action _onPlayAgain;
 
+    /// <summary>Color que se debe seguir jugando (el de la carta de arriba o el elegido con un comodín).</summary>
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(ActiveColorBrush))]
-    private char _activeColor;
+    private CardColor _activeColor;
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsCounterClockwise))]
@@ -79,7 +80,7 @@ public partial class BoardViewModel : ViewModelBase
         }
 
         _topDiscard = new CardViewModel(NumberCard());
-        _activeColor = _topDiscard.ColorCode ?? 'r';
+        _activeColor = _topDiscard.Card.Color;
 
         // Datos de ejemplo: la partida empieza con el turno del Jugador 1.
         _activePlayer = Player1;
@@ -160,7 +161,7 @@ public partial class BoardViewModel : ViewModelBase
     private void ChooseColor(CardColor color)
     {
         IsColorPickerOpen = false;
-        ActiveColor = CardViewModel.GetColorCode(color) ?? ActiveColor;
+        ActiveColor = color;
 
         var onChosen = _onColorChosen;
         _onColorChosen = null;
@@ -174,10 +175,10 @@ public partial class BoardViewModel : ViewModelBase
     // Paleta tomada directamente de las cartas 8 bits
     public IBrush ActiveColorBrush => ActiveColor switch
     {
-        'r' => new SolidColorBrush(Color.Parse("#FF0000")),
-        'g' => new SolidColorBrush(Color.Parse("#40FF00")),
-        'b' => new SolidColorBrush(Color.Parse("#0020FF")),
-        'y' => new SolidColorBrush(Color.Parse("#E6B400")),
+        CardColor.Red => new SolidColorBrush(Color.Parse("#FF0000")),
+        CardColor.Green => new SolidColorBrush(Color.Parse("#40FF00")),
+        CardColor.Blue => new SolidColorBrush(Color.Parse("#0020FF")),
+        CardColor.Yellow => new SolidColorBrush(Color.Parse("#E6B400")),
         _ => new SolidColorBrush(Color.Parse("#555555"))
     };
 

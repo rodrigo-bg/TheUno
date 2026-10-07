@@ -26,14 +26,12 @@ public class CardViewModel : ViewModelBase
 
     public string AssetName { get; }
 
-    /// <summary>Letra del color de la carta (r, g, b, y) o null si es comodín.</summary>
-    public char? ColorCode => GetColorCode(Card.Color);
-
     public Bitmap Image => LoadBitmap(AssetName + ".png");
 
     public static Bitmap BackImage => LoadBitmap("back.png");
 
-    public static char? GetColorCode(CardColor color) => color switch
+    // Las imágenes empiezan con la letra de su color: r_7.png, g_skip.png, b_draw2.png...
+    private static char? GetColorPrefix(CardColor color) => color switch
     {
         CardColor.Red => 'r',
         CardColor.Green => 'g',
@@ -47,7 +45,7 @@ public class CardViewModel : ViewModelBase
         if (card.Type == CardType.Wild) return "wild";
         if (card.Type == CardType.WildDrawFour) return "wild_draw4";
 
-        var color = GetColorCode(card.Color)
+        var color = GetColorPrefix(card.Color)
                     ?? throw new ArgumentException($"La carta {card.DisplayText} necesita un color.", nameof(card));
 
         var value = card.Type switch
