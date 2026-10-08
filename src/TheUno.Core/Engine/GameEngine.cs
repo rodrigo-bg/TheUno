@@ -470,4 +470,55 @@ public class GameEngine : IGameEngine
             _lastActingPlayer = null;
         }
         
+        private void EndGame(Player winner)
+        {
+            _isGameOver = true;
+            TimeSpan duration = DateTime.UtcNow - _gameStartTime;
+
+            // Cálculo de puntos reglamentario de Mattel sumando las manos rivales
+            int totalScore = 0;
+            for (int i = 0; i < _players.Count; i++)
+            {
+                if (_players[i].Id != winner.Id)
+                {
+                    totalScore += _players[i].CalculateHandScore();
+                }
+            }
+
+            if (OnGameOver != null)
+            {
+                OnGameOver(new GameOverEventArgs(winner, duration, _totalTurns));
+            }
+        }
+
+        private void LogAction(Player player, GameActionType action, string cardDetails, string? chosenColor)
+        {
+            if (_logRepository == null)
+            {
+                return;
+            }
+
+            GameLogEntryDto entry = new GameLogEntryDto(
+                _matchId,
+                _totalTurns,
+                player.Id,
+                action,
+                cardDetails,
+                chosenColor,
+                DateTime.UtcNow
+            );
+
+            // Envío asíncrono seguro en segundo plano para no bloquear la interfaz gráfica
+            Task.Run(async () =>
+            {
+                try
+                {
+                    await _logRepository.LogActionAsync(entry);
+                }
+                catch
+                {
+                    // Previene caídas del juego si la base de datos se encuentra ocupada
+                }
+            });
+        }
 }
