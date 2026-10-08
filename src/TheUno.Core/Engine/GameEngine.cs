@@ -266,4 +266,93 @@ public class GameEngine : IGameEngine
         // Procesar efectos especiales de la carta tirada
         ProcessCardEffects(card);
     }
+    
+    //Permite al jugador robar una carta del maso si no quiere o no puede jugar
+    
+    public void DrawCard()
+    {
+        if (_isGameOver)
+        {
+            throw new InvalidOperationException("La partida ya ha finalizado.");
+        }
+
+        if (_hasDrawnThisTurn)
+        {
+            throw new InvalidOperationException("Ya has robado una carta en este turno.");
+        }
+
+        CheckUnoPenaltyForPreviousPlayer();
+
+        Player actingPlayer = CurrentPlayer;
+        Card? drawnCard = _deck.Draw();
+
+        if (drawnCard == null)
+        {
+            // Mazo y descarte totalmente vacíos: pasa el turno
+            AdvanceTurn(1);
+            return;
+        }
+
+        actingPlayer.AddCard(drawnCard);
+        actingPlayer.HasDeclaredUno = false;
+
+        if (OnCardDrawn != null)
+        {
+            OnCardDrawn(new CardDrawnEventArgs(actingPlayer, drawnCard));
+        }
+
+        LogAction(actingPlayer, GameActionType.DrawCard, drawnCard.GetDisplayText(), null);
+
+        // Verificar si la carta robada se puede tirar de inmediato
+        bool canPlayDrawn = _rules.IsPlayLegal(drawnCard, TopCard, _activeColor, actingPlayer.Hand);
+
+        if (canPlayDrawn)
+        {
+            // Se le permite jugarla o pasar
+            _hasDrawnThisTurn = true;
+            _drawnCardThisTurn = drawnCard;
+        }
+        else
+        {
+            // Si no se puede jugar, pasa el turno automáticamente según Mattel
+            AdvanceTurn(1);
+        }
+    }
+    
+    //Pasa el turno si el jugador ya robo y decidio no jugar la carta
+    public void PassTurn()
+    {
+        if (_isGameOver)
+        {
+            throw new InvalidOperationException("La partida ya ha finalizado.");
+        }
+
+        if (!_hasDrawnThisTurn)
+        {
+            throw new InvalidOperationException("No puedes pasar el turno sin haber robado primero.");
+        }
+
+        LogAction(CurrentPlayer, GameActionType.PassTurn, "Paso de turno", null);
+        AdvanceTurn(1);
+    }
+    
+
+    // Declara el estado de 'UNO' para el jugador en turno.
+    public void CallUno()
+    {
+        if (_isGameOver)
+        {
+            return;
+        }
+
+        // Legal si tiene 1 carta o si tiene 2 y está por tirar una
+        if (CurrentPlayer.Hand.Count <= 2)
+        {
+            CurrentPlayer.HasDeclaredUno = true;
+            LogAction(CurrentPlayer, GameActionType.CallUno, "Declaro UNO", null);
+        }
+    }
+    
+        // METODOS PRIVADOS PARA EL CONTROL DE FLUJO DEL PROGRAMA
+        
 }
