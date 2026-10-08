@@ -75,4 +75,54 @@ public class GameEngine : IGameEngine
             return _direction;
         }
     }
+    
+    public event Action<CardPlayedEventArgs>? OnCardPlayed;
+    public event Action<CardDrawnEventArgs>? OnCardDrawn;
+    public event Action<TurnChangedEventArgs>? OnTurnChanged;
+    public event Action<GameOverEventArgs>? OnGameOver;
+    public event Action<Player>? OnUnoPenalty;
+
+    public GameEngine(IGameLogRepository? logRepository = null)
+    {
+        _deck = new Deck();
+        _rules = new GameRules();
+        _logRepository = logRepository;
+        _players = new List<Player>();
+        _direction = 1;
+        _activeColor = CardColor.None;
+    }
+
+
+// Configura la partida inicial
+    public void StartGame(IEnumerable<string> playerNames)
+    {
+        if (playerNames == null)
+        {
+            throw new ArgumentNullException(nameof(playerNames));
+        }
+
+        _players.Clear();
+        foreach (string name in playerNames)
+        {
+            _players.Add(new Player(name));
+        }
+
+        if (_players.Count != 3)
+        {
+            throw new InvalidOperationException("La partida de UNO requiere exactamente 3 jugadores.");
+        }
+
+        _deck.Reset();
+        _direction = 1;
+        _currentPlayerIndex = 0;
+        _totalTurns = 1;
+        _isGameOver = false;
+        _hasDrawnThisTurn = false;
+        _drawnCardThisTurn = null;
+        _lastActingPlayer = null;
+        _gameStartTime = DateTime.UtcNow;
+        _matchId = Guid.NewGuid();
+    }
+
+    
 }
