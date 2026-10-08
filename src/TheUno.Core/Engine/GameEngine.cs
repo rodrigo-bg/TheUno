@@ -353,6 +353,81 @@ public class GameEngine : IGameEngine
         }
     }
     
-        // METODOS PRIVADOS PARA EL CONTROL DE FLUJO DEL PROGRAMA
+        // METODOS INTERNOS PARA EL CONTROL DE FLUJO DEL PROGRAMA
+        
+        private void ProcessCardEffects(Card card)
+        {
+            switch (card.Type)
+            {
+                case CardType.Reverse:
+                    // En 3 jugadores invierte formalmente el sentido del juego
+                    _direction = _direction * -1;
+                    AdvanceTurn(1);
+                    break;
+
+                case CardType.Skip:
+                    // Salta al siguiente jugador (avanza 2 posiciones)
+                    AdvanceTurn(2);
+                    break;
+
+                case CardType.DrawTwo:
+                    // El siguiente jugador roba 2 y pierde su turno
+                    Player victimDrawTwo = GetPlayerAtOffset(1);
+                    GiveCardsToPlayer(victimDrawTwo, 2);
+                    AdvanceTurn(2);
+                    break;
+
+                case CardType.WildDrawFour:
+                    // El siguiente jugador roba 4 y pierde su turno
+                    Player victimDrawFour = GetPlayerAtOffset(1);
+                    GiveCardsToPlayer(victimDrawFour, 4);
+                    AdvanceTurn(2);
+                    break;
+
+                default:
+                    // Cartas numéricas o Wild simple
+                    AdvanceTurn(1);
+                    break;
+            }
+        }
+
+        
+        /// Calcula el índice cíclico en el anillo de 3 jugadores usando aritmética modular.
+        
+        private int CalculateIndex(int steps)
+        {
+            int count = _players.Count;
+            int nextIndex = (_currentPlayerIndex + (steps * _direction)) % count;
+            if (nextIndex < 0)
+            {
+                nextIndex = nextIndex + count;
+            }
+            return nextIndex;
+        }
+
+        private Player GetPlayerAtOffset(int steps)
+        {
+            int targetIndex = CalculateIndex(steps);
+            return _players[targetIndex];
+        }
+
+        private void AdvanceTurn(int steps)
+        {
+            _currentPlayerIndex = CalculateIndex(steps);
+            _totalTurns++;
+            _hasDrawnThisTurn = false;
+            _drawnCardThisTurn = null;
+
+            NotifyTurnChanged();
+        }
+        
+        private void NotifyTurnChanged()
+        {
+            if (OnTurnChanged != null)
+            {
+                OnTurnChanged(new TurnChangedEventArgs(CurrentPlayer, _direction, TopCard, _activeColor));
+            }
+        }
+        
         
 }
