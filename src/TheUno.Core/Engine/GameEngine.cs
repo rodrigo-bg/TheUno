@@ -231,7 +231,10 @@ public class GameEngine : IGameEngine
         // Actualizar color activo
         if (card.Type == CardType.Wild || card.Type == CardType.WildDrawFour)
         {
-            _activeColor = chosenColor.Value;
+            if (chosenColor.HasValue)
+            {
+                _activeColor = chosenColor.Value;
+            }
         }
         else
         {
