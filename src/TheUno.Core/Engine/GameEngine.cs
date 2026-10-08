@@ -170,6 +170,100 @@ public class GameEngine : IGameEngine
 
         NotifyTurnChanged();
     }
-
     
+    // consulta si una carta puede ser jugada o no
+
+    public bool CanPlayCard(Card card)
+    {
+        if (_isGameOver || card == null || _players.Count == 0)
+        {
+            return false;
+        }
+        
+        // Si ya robó este turno, las reglas de Mattel solo permiten tirar la carta recién robada
+        if (_hasDrawnThisTurn)
+        {
+            if (_drawnCardThisTurn == null || card.Id != _drawnCardThisTurn.Id)
+            {
+                return false;
+            }
+        }
+        
+        if (!CurrentPlayer.HasCard(card))
+        {
+            return false;
+        }
+
+        return _rules.IsPlayLegal(card, TopCard, _activeColor, CurrentPlayer.Hand);
+    }
+    
+    // Ejecuta la jugada de una carta
+    public void PlayCard(Card card, CardColor? chosenColor = null)
+    {
+        if (_isGameOver)
+        {
+            throw new InvalidOperationException("La partida ya ha finalizado.");
+        }
+
+        if (!CanPlayCard(card))
+        {
+            throw new InvalidOperationException("La carta seleccionada no es una jugada legal.");
+        }
+
+        // Validación de comodines
+        if (card.Type == CardType.Wild || card.Type == CardType.WildDrawFour)
+        {
+            if (!chosenColor.HasValue || chosenColor.Value == CardColor.None)
+            {
+                throw new ArgumentException("Debes elegir un color válido al jugar un comodín.");
+            }
+        }
+
+        // Penalización automática de UNO al jugador anterior si omitió cantar UNO
+        CheckUnoPenaltyForPreviousPlayer();
+
+        Player actingPlayer = CurrentPlayer;
+
+        // Mover carta de la mano al descarte
+        actingPlayer.RemoveCard(card);
+        _deck.Discard(card);
+
+        // Actualizar color activo
+        if (card.Type == CardType.Wild || card.Type == CardType.WildDrawFour)
+        {
+            _activeColor = chosenColor.Value;
+        }
+        else
+        {
+            _activeColor = card.Color;
+        }
+
+        _hasDrawnThisTurn = false;
+        _drawnCardThisTurn = null;
+        _lastActingPlayer = actingPlayer;
+
+        // Disparar evento de carta jugada
+        if (OnCardPlayed != null)
+        {
+            OnCardPlayed(new CardPlayedEventArgs(actingPlayer, card, _activeColor));
+        }
+
+        LogAction(actingPlayer, GameActionType.PlayCard, card.GetDisplayText(), chosenColor?.ToString());
+
+        // Comprobación de fin de partida (Mano vacía)
+        if (actingPlayer.Hand.Count == 0)
+        {
+            EndGame(actingPlayer);
+            return;
+        }
+
+        // Si le queda más de 1 carta, se reinicia la bandera de UNO
+        if (actingPlayer.Hand.Count > 1)
+        {
+            actingPlayer.HasDeclaredUno = false;
+        }
+
+        // Procesar efectos especiales de la carta tirada
+        ProcessCardEffects(card);
+    }
 }
