@@ -122,6 +122,53 @@ public class GameEngine : IGameEngine
         _lastActingPlayer = null;
         _gameStartTime = DateTime.UtcNow;
         _matchId = Guid.NewGuid();
+        
+        for (int p = 0; p < _players.Count; p++)
+        {
+            for (int c = 0; c < 7; c++)
+            {
+                Card? card = _deck.Draw();
+                if (card != null)
+                {
+                    _players[p].AddCard(card);
+                }
+            }
+        }
+        
+        // 2. Extraer la primera carta inicial del descarte
+        Card firstCard = _deck.SetupFirstDiscardCard();
+        if (firstCard.Color == CardColor.None)
+        {
+            _activeColor = CardColor.Red; // Si la primera carta es un Wild, se inicia en Rojo por defecto
+        }
+        else
+        {
+            _activeColor = firstCard.Color;
+        }
+        
+        // 3. Reglas oficiales de Mattel para la carta inicial volteada
+        if (firstCard.Type == CardType.Skip)
+        {
+            // El jugador 1 pierde su turno
+            AdvanceTurn(1);
+            return;
+        }
+
+        if (firstCard.Type == CardType.Reverse)
+        {
+            // Invierte la dirección de inicio (antihorario)
+            _direction = -1;
+        }
+        else if (firstCard.Type == CardType.DrawTwo)
+        {
+            // El primer jugador roba 2 cartas y es saltado
+            Player firstPlayer = _players[0];
+            GiveCardsToPlayer(firstPlayer, 2);
+            AdvanceTurn(1);
+            return;
+        }
+
+        NotifyTurnChanged();
     }
 
     
