@@ -27,5 +27,52 @@ public class GameEngine : IGameEngine
     private DateTime _gameStartTime;
     private int _totalTurns;
     
-    
+    public IReadOnlyList<Player> Players
+    {
+        get
+        {
+            return _players;
+        }
+    }
+
+    public Player CurrentPlayer
+    {
+        get
+        {
+            if (_players.Count == 0)
+            {
+                throw new InvalidOperationException("La partida no ha sido iniciada.");
+            }
+            return _players[_currentPlayerIndex];
+        }
+    }
+
+    public Card TopCard
+    {
+        get
+        {
+            Card? top = _deck.GetTopCard();
+            if (top == null)
+            {
+                throw new InvalidOperationException("No hay cartas en la mesa.");
+            }
+            return top;
+        }
+    }
+
+    public CardColor ActiveColor
+    {
+        get
+        {
+            return _activeColor;
+        }
+    }
+
+    public int Direction
+    {
+        get
+        {
+            return _direction;
+        }
+    }
 }
