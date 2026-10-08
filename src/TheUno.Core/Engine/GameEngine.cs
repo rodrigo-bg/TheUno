@@ -429,5 +429,45 @@ public class GameEngine : IGameEngine
             }
         }
         
+        private void GiveCardsToPlayer(Player player, int count)
+        {
+            for (int i = 0; i < count; i++)
+            {
+                Card? card = _deck.Draw();
+                if (card != null)
+                {
+                    player.AddCard(card);
+                    if (OnCardDrawn != null)
+                    {
+                        OnCardDrawn(new CardDrawnEventArgs(player, card));
+                    }
+                }
+            }
+            player.HasDeclaredUno = false;
+        }
+
+        private void CheckUnoPenaltyForPreviousPlayer()
+        {
+            if (_lastActingPlayer == null)
+            {
+                return;
+            }
+
+            // Si el jugador anterior terminó su turno con 1 carta y no cantó UNO
+            if (_lastActingPlayer.Hand.Count == 1 && !_lastActingPlayer.HasDeclaredUno)
+            {
+                GiveCardsToPlayer(_lastActingPlayer, 2);
+                _lastActingPlayer.HasDeclaredUno = true;
+
+                if (OnUnoPenalty != null)
+                {
+                    OnUnoPenalty(_lastActingPlayer);
+                }
+
+                LogAction(_lastActingPlayer, GameActionType.UnoPenalty, "Penalizacion de 2 cartas por no cantar UNO", null);
+            }
+
+            _lastActingPlayer = null;
+        }
         
 }
