@@ -9,6 +9,15 @@ public class CardPlayedEventArgs : EventArgs
     public Card Card { get; }
     public CardColor ActiveColor { get; }
 
+    // Compatibilidad con TheUno.Infrastructure
+    public CardColor EffectiveColor
+    {
+        get
+        {
+            return ActiveColor;
+        }
+    }
+
     public CardPlayedEventArgs(Player player, Card card, CardColor activeColor)
     {
         Player = player;

@@ -13,20 +13,20 @@ public class GameLogEntryDto
     public DateTime Timestamp { get; }
 
     public GameLogEntryDto(
-        Guid matchId,
-        int turnNumber,
-        Guid playerId,
-        GameActionType action,
-        string cardDetails,
-        string? chosenColor,
-        DateTime timestamp)
+        Guid MatchId,
+        int TurnNumber,
+        Guid PlayerId,
+        GameActionType Action,
+        string CardDetails,
+        string? ChosenColor,
+        DateTime Timestamp)
     {
-        MatchId = matchId;
-        TurnNumber = turnNumber;
-        PlayerId = playerId;
-        Action = action;
-        CardDetails = cardDetails;
-        ChosenColor = chosenColor;
-        Timestamp = timestamp;
+        this.MatchId = MatchId;
+        this.TurnNumber = TurnNumber;
+        this.PlayerId = PlayerId;
+        this.Action = Action;
+        this.CardDetails = CardDetails;
+        this.ChosenColor = ChosenColor;
+        this.Timestamp = Timestamp;
     }
 }
