@@ -102,6 +102,7 @@ public partial class BoardViewModel : ViewModelBase
         _engine.OnTurnChanged += OnTurnChanged;
         _engine.OnCardPlayed += OnCardPlayed;
         _engine.OnCardDrawn += OnCardDrawn;
+        _engine.OnGameOver += OnGameOver;
     }
 
     /// <summary>Constructor para el diseñador de Rider/Avalonia.</summary>
@@ -221,7 +222,7 @@ public partial class BoardViewModel : ViewModelBase
         UpdatePlayableCards();
     }
 
-    private bool CanDrawCard() => !CanPassTurn;
+    private bool CanDrawCard() => !CanPassTurn && !_isGameOver;
 
     [RelayCommand(CanExecute = nameof(CanPassTurn))]
     private void PassTurn() => _engine.PassTurn();
@@ -285,15 +286,22 @@ public partial class BoardViewModel : ViewModelBase
 
     // ---------- Victoria ----------
 
+    /// <summary>El motor avisa que alguien se quedó sin cartas.</summary>
+    private void OnGameOver(GameOverEventArgs e) => ShowVictory(GetPlayerViewModel(e.Winner));
+
     /// <summary>
     /// Termina la partida: tras una pausa de 3 segundos (para que se vea la última carta en la mesa)
     /// aparece la pantalla de victoria con el nombre del ganador.
-    /// Cuando exista el motor, se llamará desde su evento OnGameOver.
+    /// Mientras tanto ya no se puede robar ni tirar.
     /// </summary>
     public void ShowVictory(PlayerViewModel winner)
     {
         if (_isGameOver) return;
         _isGameOver = true;
+
+        CanPassTurn = false;
+        DrawCardCommand.NotifyCanExecuteChanged();
+        UpdatePlayableCards();
 
         DispatcherTimer.RunOnce(() =>
         {
