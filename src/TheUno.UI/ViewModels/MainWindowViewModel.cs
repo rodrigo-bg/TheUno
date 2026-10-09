@@ -1,4 +1,5 @@
 using CommunityToolkit.Mvvm.ComponentModel;
+using TheUno.Core.Engine;
 using TheUno.UI.Services;
 
 namespace TheUno.UI.ViewModels;
@@ -32,7 +33,8 @@ public partial class MainWindowViewModel : ViewModelBase
     private void StartGame()
     {
         // "Volver a jugar" en la pantalla de victoria vuelve a llamar a StartGame: partida nueva.
-        CurrentView = new BoardViewModel(ShowMenu, StartGame);
+        // Cada partida usa un motor nuevo; el tablero lo recibe ya creado.
+        CurrentView = new BoardViewModel(new GameEngine(), ShowMenu, StartGame);
     }
 
     private void ShowHistory()

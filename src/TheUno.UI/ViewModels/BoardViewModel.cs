@@ -25,7 +25,8 @@ public partial class BoardViewModel : ViewModelBase
     // Tiempo que se ve el aviso de penalización por no cantar UNO
     private static readonly TimeSpan PenaltyNoticeDuration = TimeSpan.FromSeconds(2.5);
 
-    private readonly IGameEngine _engine = new GameEngine();
+    // Motor de juego: lo crea MainWindowViewModel y se recibe en el constructor
+    private readonly IGameEngine _engine;
 
     // Navegación: las pone MainWindowViewModel
     private readonly Action _goToMenu;
@@ -105,8 +106,9 @@ public partial class BoardViewModel : ViewModelBase
     [ObservableProperty]
     private string _winnerName = string.Empty;
 
-    public BoardViewModel(Action goToMenu, Action startNewGame)
+    public BoardViewModel(IGameEngine engine, Action goToMenu, Action startNewGame)
     {
+        _engine = engine;
         _goToMenu = goToMenu;
         _startNewGame = startNewGame;
 
@@ -135,7 +137,7 @@ public partial class BoardViewModel : ViewModelBase
     }
 
     /// <summary>Constructor para el diseñador de Rider/Avalonia.</summary>
-    public BoardViewModel() : this(() => { }, () => { })
+    public BoardViewModel() : this(new GameEngine(), () => { }, () => { })
     {
     }
 
