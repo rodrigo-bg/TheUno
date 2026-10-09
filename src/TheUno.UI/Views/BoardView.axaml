@@ -23,6 +23,7 @@
              las demás manos están deshabilitadas). -->
         <DataTemplate DataType="vm:CardViewModel">
             <Button Classes="cardButton"
+                    Classes.playable="{Binding IsPlayable}"
                     Command="{Binding $parent[UserControl].((vm:BoardViewModel)DataContext).PlayCardCommand}"
                     CommandParameter="{Binding}">
                 <!-- El borde exterior dibuja la sombra y el contorno; el interior recorta la imagen
@@ -59,6 +60,12 @@
             <Setter Property="IsVisible" Value="False" />
         </Style>
         <Style Selector="ItemsControl:disabled Border.cardShade">
+            <Setter Property="IsVisible" Value="True" />
+        </Style>
+        <!-- En la mano del jugador en turno, las cartas que no se pueden tirar se oscurecen un poco
+             (menos que las manos de los demás) -->
+        <Style Selector="Border.playerZone.active Button.cardButton:not(.playable) Border.cardShade">
+            <Setter Property="Background" Value="#40000000" />
             <Setter Property="IsVisible" Value="True" />
         </Style>
         <!-- Textos estilo 8 bits: fuente pixel y sombra dura sin desenfoque -->

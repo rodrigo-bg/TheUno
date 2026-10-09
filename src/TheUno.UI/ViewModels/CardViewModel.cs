@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using Avalonia.Media.Imaging;
 using Avalonia.Platform;
+using CommunityToolkit.Mvvm.ComponentModel;
 using TheUno.Core.Models;
 
 namespace TheUno.UI.ViewModels;
@@ -10,11 +11,15 @@ namespace TheUno.UI.ViewModels;
 /// Representación visual de una carta del Core. Traduce su color y tipo al nombre
 /// de su imagen en Assets/Cards_8bit (ej. "r_7", "b_skip", "wild_draw4").
 /// </summary>
-public class CardViewModel : ViewModelBase
+public partial class CardViewModel : ViewModelBase
 {
     private const string CardsFolder = "avares://TheUno.UI/Assets/Cards_8bit";
 
     private static readonly Dictionary<string, Bitmap> BitmapCache = new();
+
+    /// <summary>La carta es del jugador en turno y el motor permite tirarla: se resalta en la mano.</summary>
+    [ObservableProperty]
+    private bool _isPlayable;
 
     public CardViewModel(Card card)
     {

@@ -96,6 +96,7 @@ public partial class BoardViewModel : ViewModelBase
         _isClockwise = _engine.Direction == 1;
         _activePlayer = GetPlayerViewModel(_engine.CurrentPlayer);
         _activePlayer.IsActive = true;
+        UpdatePlayableCards();
 
         // Se escucha después de StartGame porque los PlayerViewModel aún no existían.
         _engine.OnTurnChanged += OnTurnChanged;
@@ -148,6 +149,7 @@ public partial class BoardViewModel : ViewModelBase
         IsClockwise = e.Direction == 1;
         ActivePlayer = GetPlayerViewModel(e.CurrentPlayer);
         CanPassTurn = false;
+        UpdatePlayableCards();
     }
 
     private PlayerViewModel GetPlayerViewModel(Player player)
@@ -155,6 +157,21 @@ public partial class BoardViewModel : ViewModelBase
         if (player == Player1.Model) return Player1;
         if (player == Player2.Model) return Player2;
         return Player3;
+    }
+
+    /// <summary>
+    /// Marca las cartas que el motor permite tirar. Solo pueden ser del jugador en turno;
+    /// después de robar, solo la carta robada.
+    /// </summary>
+    private void UpdatePlayableCards()
+    {
+        foreach (var player in new[] { Player1, Player2, Player3 })
+        {
+            foreach (var card in player.Hand)
+            {
+                card.IsPlayable = _engine.CanPlayCard(card.Card);
+            }
+        }
     }
 
     // ---------- Tirar carta ----------
@@ -186,6 +203,7 @@ public partial class BoardViewModel : ViewModelBase
         GetPlayerViewModel(e.Player).SyncHand();
         TopDiscardCard = new CardViewModel(e.Card);
         ActiveColor = e.ActiveColor;
+        UpdatePlayableCards();
     }
 
     // ---------- Robar y pasar ----------
@@ -200,6 +218,7 @@ public partial class BoardViewModel : ViewModelBase
         var drawingPlayer = _engine.CurrentPlayer;
         _engine.DrawCard();
         CanPassTurn = _engine.CurrentPlayer == drawingPlayer;
+        UpdatePlayableCards();
     }
 
     private bool CanDrawCard() => !CanPassTurn;
