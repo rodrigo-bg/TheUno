@@ -22,6 +22,16 @@ public class MatchRepository : IMatchRepository
             StartedAt = DateTime.UtcNow,
             TotalTurns = 0
         };
+        
+        // Agrega la relación con los 3 jugadores
+        foreach (var playerId in playerIds)
+        {
+            match.MatchPlayers.Add(new MatchPlayer
+            {
+                MatchId = match.Id,
+                PlayerId = playerId,
+            });  
+        }
 
         _context.Matches.Add(match);
         await _context.SaveChangesAsync();

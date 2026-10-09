@@ -85,6 +85,24 @@ namespace TheUno.Infrastructure.Migrations
                     b.ToTable("Matches");
                 });
 
+            modelBuilder.Entity("TheUno.Infrastructure.Entities.MatchPlayer", b =>
+                {
+                    b.Property<Guid>("MatchId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("PlayerId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Position")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("MatchId", "PlayerId");
+
+                    b.HasIndex("PlayerId");
+
+                    b.ToTable("MatchPlayer");
+                });
+
             modelBuilder.Entity("TheUno.Infrastructure.Entities.Player", b =>
                 {
                     b.Property<Guid>("Id")
@@ -152,9 +170,30 @@ namespace TheUno.Infrastructure.Migrations
                     b.Navigation("Winner");
                 });
 
+            modelBuilder.Entity("TheUno.Infrastructure.Entities.MatchPlayer", b =>
+                {
+                    b.HasOne("TheUno.Infrastructure.Entities.Match", "Match")
+                        .WithMany("MatchPlayers")
+                        .HasForeignKey("MatchId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("TheUno.Infrastructure.Entities.Player", "Player")
+                        .WithMany()
+                        .HasForeignKey("PlayerId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Match");
+
+                    b.Navigation("Player");
+                });
+
             modelBuilder.Entity("TheUno.Infrastructure.Entities.Match", b =>
                 {
                     b.Navigation("GameLogs");
+
+                    b.Navigation("MatchPlayers");
                 });
 
             modelBuilder.Entity("TheUno.Infrastructure.Entities.Player", b =>

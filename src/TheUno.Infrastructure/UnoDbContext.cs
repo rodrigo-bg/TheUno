@@ -60,6 +60,21 @@ public class UnoDbContext : DbContext
                 entity.HasOne(g => g.Player).WithMany(p => p.GameLogs).HasForeignKey(g => g.PlayerId)
                     .OnDelete(DeleteBehavior.Restrict);
             });
+        
+        // Configuración de MatchPlayer
+        modelBuilder.Entity<MatchPlayer>(entity =>
+        {
+            // Clave primaria compuesta por MatchId y PlyaerId
+            entity.HasKey(mp => new { mp.MatchId, mp.PlayerId });
+
+            entity.HasOne(mp => mp.Match)
+                .WithMany(m => m.MatchPlayers)
+                .HasForeignKey(mp => mp.MatchId);
+
+            entity.HasOne(mp => mp.Player)
+                .WithMany()
+                .HasForeignKey(mp => mp.PlayerId);
+        });
     }
 }
 

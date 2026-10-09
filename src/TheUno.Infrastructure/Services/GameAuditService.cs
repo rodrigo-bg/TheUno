@@ -1,4 +1,5 @@
-﻿using TheUno.Core.Contracts;
+﻿using System;
+using TheUno.Core.Contracts;
 using TheUno.Core.Events;
 using TheUno.Core.Models;
 
@@ -7,23 +8,26 @@ namespace TheUno.Infrastructure.Services;
 public class GameAuditService : IDisposable
 {
     private readonly IGameLogRepository _logRepository;
-    private readonly IGameEngine _gameEngine;
-    private readonly Guid _currentMatchId;
+    private IGameEngine? _gameEngine;
+    private Guid _currentMatchId;
     private int _currentTurnNumber;
 
-    public GameAuditService(IGameLogRepository logRepository, IGameEngine gameEngine, Guid matchId)
+    public GameAuditService(IGameLogRepository logRepository)
     {
         _logRepository = logRepository;
+    }
+
+    /// <summary>
+    /// Inicializa la escucha de eventos de auditoría para una nueva partida.
+    /// </summary>
+    public void Initialize(IGameEngine gameEngine, Guid matchId)
+    {
+        Dispose(); // Limpia suscripciones previas si existían
+
         _gameEngine = gameEngine;
         _currentMatchId = matchId;
         _currentTurnNumber = 1;
 
-        // Suscribirse a los eventos del motor de juego
-        SubscribeToEngineEvents();
-    }
-
-    private void SubscribeToEngineEvents()
-    {
         _gameEngine.OnCardPlayed += HandleCardPlayed;
         _gameEngine.OnCardDrawn += HandleCardDrawn;
         _gameEngine.OnTurnChanged += HandleTurnChanged;
@@ -62,7 +66,6 @@ public class GameAuditService : IDisposable
 
     private void HandleTurnChanged(TurnChangedEventArgs args)
     {
-        // Al cambiar de turno se aumenta el contador para la siguiente acción
         _currentTurnNumber++;
     }
 
@@ -83,10 +86,13 @@ public class GameAuditService : IDisposable
 
     public void Dispose()
     {
-        // Cancelar suscripciones a eventos cuando la partida termine para liberar recursos
-        _gameEngine.OnCardPlayed -= HandleCardPlayed;
-        _gameEngine.OnCardDrawn -= HandleCardDrawn;
-        _gameEngine.OnTurnChanged -= HandleTurnChanged;
-        _gameEngine.OnUnoPenalty -= HandleUnoPenalty;
+        if (_gameEngine != null)
+        {
+            _gameEngine.OnCardPlayed -= HandleCardPlayed;
+            _gameEngine.OnCardDrawn -= HandleCardDrawn;
+            _gameEngine.OnTurnChanged -= HandleTurnChanged;
+            _gameEngine.OnUnoPenalty -= HandleUnoPenalty;
+            _gameEngine = null;
+        }
     }
 }
