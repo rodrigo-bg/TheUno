@@ -260,8 +260,12 @@ public partial class BoardViewModel : ViewModelBase
     [RelayCommand]
     private void CallUno(PlayerViewModel player)
     {
-        // Cuando exista el motor, aquí se llamará a CallUno() de IGameEngine.
         player.HasCalledUno = true;
+
+        // El botón aparece después de tirar la penúltima carta, cuando el turno ya es de otro,
+        // así que no sirve CallUno() del motor (solo marca al jugador en turno). Se marca
+        // directo al jugador del Core: el motor revisa esta propiedad antes de castigar con +2.
+        player.Model.HasDeclaredUno = true;
     }
 
     // ---------- Salir de la partida ----------
