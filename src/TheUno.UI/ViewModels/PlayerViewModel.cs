@@ -1,6 +1,8 @@
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
+using System.Linq;
 using CommunityToolkit.Mvvm.ComponentModel;
+using TheUno.Core.Models;
 
 namespace TheUno.UI.ViewModels;
 
@@ -15,13 +17,17 @@ public partial class PlayerViewModel : ViewModelBase
     [NotifyPropertyChangedFor(nameof(ShowUnoButton))]
     private bool _hasCalledUno;
 
-    public PlayerViewModel(string name)
+    public PlayerViewModel(Player model)
     {
-        Name = name;
+        Model = model;
         Hand.CollectionChanged += OnHandChanged;
+        SyncHand();
     }
 
-    public string Name { get; }
+    /// <summary>Jugador del motor de juego al que representa este ViewModel.</summary>
+    public Player Model { get; }
+
+    public string Name => Model.Name;
 
     public ObservableCollection<CardViewModel> Hand { get; } = new();
 
@@ -30,6 +36,23 @@ public partial class PlayerViewModel : ViewModelBase
     /// No depende del turno: al tirar la penúltima carta el turno ya pasó al siguiente jugador.
     /// </summary>
     public bool ShowUnoButton => Hand.Count == 1 && !HasCalledUno;
+
+    /// <summary>
+    /// Iguala la mano visible con la del motor: quita las cartas que ya no tiene y agrega las nuevas.
+    /// Las cartas que se quedan conservan su CardViewModel, así no se reconstruye toda la mano.
+    /// </summary>
+    public void SyncHand()
+    {
+        for (var i = Hand.Count - 1; i >= 0; i--)
+        {
+            if (!Model.Hand.Contains(Hand[i].Card)) Hand.RemoveAt(i);
+        }
+
+        foreach (var card in Model.Hand)
+        {
+            if (Hand.All(c => c.Card != card)) Hand.Add(new CardViewModel(card));
+        }
+    }
 
     private void OnHandChanged(object? sender, NotifyCollectionChangedEventArgs e)
     {

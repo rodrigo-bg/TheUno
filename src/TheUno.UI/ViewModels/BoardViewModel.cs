@@ -4,21 +4,22 @@ using Avalonia.Media.Imaging;
 using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using TheUno.Core.Contracts;
+using TheUno.Core.Engine;
+using TheUno.Core.Events;
 using TheUno.Core.Models;
 
 namespace TheUno.UI.ViewModels;
 
 /// <summary>
-/// Estado visual de la mesa. Mientras TheUno.Core no tenga el motor de juego,
-/// se llena con datos de ejemplo para poder visualizar el tablero.
+/// Estado visual de la mesa. La partida la lleva el motor de juego de TheUno.Core:
+/// este ViewModel solo refleja su estado y escucha sus eventos.
 /// </summary>
 public partial class BoardViewModel : ViewModelBase
 {
-    // Datos de ejemplo
-    private const int InitialHandSize = 7;
-    private static readonly CardColor[] SampleColors = { CardColor.Red, CardColor.Green, CardColor.Blue, CardColor.Yellow };
-    private static readonly CardType[] SampleActionTypes = { CardType.Skip, CardType.Reverse, CardType.DrawTwo };
-    private readonly Random _random = new();
+    private static readonly string[] PlayerNames = { "Jugador 1", "Jugador 2", "Jugador 3" };
+
+    private readonly IGameEngine _engine = new GameEngine();
 
     // Navegación: las pone MainWindowViewModel
     private readonly Action _goToMenu;
@@ -72,24 +73,23 @@ public partial class BoardViewModel : ViewModelBase
         _goToMenu = goToMenu;
         _startNewGame = startNewGame;
 
-        Player1 = new PlayerViewModel("Jugador 1");
-        Player2 = new PlayerViewModel("Jugador 2");
-        Player3 = new PlayerViewModel("Jugador 3");
+        // El motor reparte 7 cartas a cada jugador y voltea la primera carta del descarte.
+        _engine.StartGame(PlayerNames);
 
-        foreach (var player in new[] { Player1, Player2, Player3 })
-        {
-            for (var i = 0; i < InitialHandSize; i++)
-            {
-                player.Hand.Add(CreateRandomCard());
-            }
-        }
+        Player1 = new PlayerViewModel(_engine.Players[0]);
+        Player2 = new PlayerViewModel(_engine.Players[1]);
+        Player3 = new PlayerViewModel(_engine.Players[2]);
 
-        _topDiscardCard = new CardViewModel(CreateRandomNumberCard());
-        _activeColor = _topDiscardCard.Card.Color;
+        // Estado inicial de la mesa. Puede no empezar el Jugador 1: si la primera carta
+        // es Salto o +2, el motor ya le pasó el turno al siguiente.
+        _topDiscardCard = new CardViewModel(_engine.TopCard);
+        _activeColor = _engine.ActiveColor;
+        _isClockwise = _engine.Direction == 1;
+        _activePlayer = GetPlayerViewModel(_engine.CurrentPlayer);
+        _activePlayer.IsActive = true;
 
-        // Datos de ejemplo: la partida empieza con el turno del Jugador 1.
-        _activePlayer = Player1;
-        Player1.IsActive = true;
+        // Se escucha después de StartGame porque los PlayerViewModel aún no existían.
+        _engine.OnTurnChanged += OnTurnChanged;
     }
 
     /// <summary>Constructor para el diseñador de Rider/Avalonia.</summary>
@@ -123,6 +123,26 @@ public partial class BoardViewModel : ViewModelBase
     {
         if (oldValue is not null) oldValue.IsActive = false;
         newValue.IsActive = true;
+    }
+
+    /// <summary>El motor cambió de turno: se refresca toda la mesa con su estado.</summary>
+    private void OnTurnChanged(TurnChangedEventArgs e)
+    {
+        Player1.SyncHand();
+        Player2.SyncHand();
+        Player3.SyncHand();
+
+        if (TopDiscardCard.Card != e.TopCard) TopDiscardCard = new CardViewModel(e.TopCard);
+        ActiveColor = e.ActiveColor;
+        IsClockwise = e.Direction == 1;
+        ActivePlayer = GetPlayerViewModel(e.CurrentPlayer);
+    }
+
+    private PlayerViewModel GetPlayerViewModel(Player player)
+    {
+        if (player == Player1.Model) return Player1;
+        if (player == Player2.Model) return Player2;
+        return Player3;
     }
 
     // ---------- Selector de color ----------
@@ -196,30 +216,4 @@ public partial class BoardViewModel : ViewModelBase
 
     [RelayCommand]
     private void PlayAgain() => _startNewGame();
-
-    // ---------- Datos de ejemplo (se quitan cuando exista el motor) ----------
-
-    private CardViewModel CreateRandomCard()
-    {
-        // 1 de cada 14 cartas es comodín, igual que en la baraja real (8 de 108).
-        if (_random.Next(14) == 0)
-        {
-            var wildType = _random.Next(2) == 0 ? CardType.Wild : CardType.WildDrawFour;
-            return new CardViewModel(new Card(Guid.NewGuid(), CardColor.None, wildType));
-        }
-
-        // 10 números y 3 cartas de acción por color.
-        var roll = _random.Next(13);
-        if (roll < 10)
-        {
-            return new CardViewModel(CreateRandomNumberCard());
-        }
-
-        return new CardViewModel(new Card(Guid.NewGuid(), PickRandomColor(), SampleActionTypes[roll - 10]));
-    }
-
-    private Card CreateRandomNumberCard() =>
-        new(Guid.NewGuid(), PickRandomColor(), CardType.Number, _random.Next(10));
-
-    private CardColor PickRandomColor() => SampleColors[_random.Next(SampleColors.Length)];
 }
