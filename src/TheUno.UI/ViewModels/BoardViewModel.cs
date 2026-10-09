@@ -25,7 +25,7 @@ public partial class BoardViewModel : ViewModelBase
     private readonly Action _goToMenu;
     private readonly Action _startNewGame;
 
-    // Qué hacer con el color elegido (cuando exista el motor: llamar a PlayCard con ese color).
+    // Qué hacer con el color elegido (tirar el comodín con ese color).
     private Action<CardColor>? _onColorChosen;
 
     private bool _isGameOver;
@@ -90,6 +90,7 @@ public partial class BoardViewModel : ViewModelBase
 
         // Se escucha después de StartGame porque los PlayerViewModel aún no existían.
         _engine.OnTurnChanged += OnTurnChanged;
+        _engine.OnCardPlayed += OnCardPlayed;
     }
 
     /// <summary>Constructor para el diseñador de Rider/Avalonia.</summary>
@@ -143,6 +144,37 @@ public partial class BoardViewModel : ViewModelBase
         if (player == Player1.Model) return Player1;
         if (player == Player2.Model) return Player2;
         return Player3;
+    }
+
+    // ---------- Tirar carta ----------
+
+    /// <summary>
+    /// El jugador en turno tira una carta. Si el motor no la permite, no pasa nada.
+    /// Un comodín o +4 primero abre el selector de color, porque el motor pide el color al tirarlo.
+    /// </summary>
+    [RelayCommand]
+    private void PlayCard(CardViewModel card)
+    {
+        if (!_engine.CanPlayCard(card.Card)) return;
+
+        if (card.Card.Type is CardType.Wild or CardType.WildDrawFour)
+        {
+            AskForColor(color => _engine.PlayCard(card.Card, color));
+            return;
+        }
+
+        _engine.PlayCard(card.Card);
+    }
+
+    /// <summary>
+    /// Se refleja la carta tirada en la mesa. Normalmente después llega el cambio de turno,
+    /// pero si era la última carta del jugador la partida termina y ya no hay cambio de turno.
+    /// </summary>
+    private void OnCardPlayed(CardPlayedEventArgs e)
+    {
+        GetPlayerViewModel(e.Player).SyncHand();
+        TopDiscardCard = new CardViewModel(e.Card);
+        ActiveColor = e.ActiveColor;
     }
 
     // ---------- Selector de color ----------

@@ -18,19 +18,25 @@
     </Design.DataContext>
 
     <UserControl.DataTemplates>
-        <!-- Carta reutilizable: muestra la imagen correspondiente con esquinas ligeramente redondeadas -->
+        <!-- Carta reutilizable: muestra la imagen correspondiente con esquinas ligeramente redondeadas.
+             Es un botón: al hacer clic se tira la carta (solo responde en la mano del jugador en turno,
+             las demás manos están deshabilitadas). -->
         <DataTemplate DataType="vm:CardViewModel">
-            <!-- El borde exterior dibuja la sombra y el contorno; el interior recorta la imagen
-                 (si fuera uno solo, el recorte también cortaría la sombra) -->
-            <Border Classes="card" CornerRadius="4">
-                <Border CornerRadius="4" ClipToBounds="True">
-                    <Panel>
-                        <Image Source="{Binding Image}" Stretch="UniformToFill" />
-                        <!-- Capa negra que oscurece la carta cuando no es el turno de su jugador -->
-                        <Border Classes="cardShade" />
-                    </Panel>
+            <Button Classes="cardButton"
+                    Command="{Binding $parent[UserControl].((vm:BoardViewModel)DataContext).PlayCardCommand}"
+                    CommandParameter="{Binding}">
+                <!-- El borde exterior dibuja la sombra y el contorno; el interior recorta la imagen
+                     (si fuera uno solo, el recorte también cortaría la sombra) -->
+                <Border Classes="card" CornerRadius="4">
+                    <Border CornerRadius="4" ClipToBounds="True">
+                        <Panel>
+                            <Image Source="{Binding Image}" Stretch="UniformToFill" />
+                            <!-- Capa negra que oscurece la carta cuando no es el turno de su jugador -->
+                            <Border Classes="cardShade" />
+                        </Panel>
+                    </Border>
                 </Border>
-            </Border>
+            </Button>
         </DataTemplate>
     </UserControl.DataTemplates>
 
@@ -109,6 +115,20 @@
         <!-- Sombra base de las cartas -->
         <Style Selector="Border.card">
             <Setter Property="BoxShadow" Value="0 2 6 0 #66000000" />
+        </Style>
+
+        <!-- Botón de la carta: sin fondo, borde ni relleno, así solo se ve la carta.
+             El fondo se fija también en la plantilla porque Fluent lo cambia al pasar el mouse,
+             al presionar y al deshabilitar. -->
+        <Style Selector="Button.cardButton">
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="CornerRadius" Value="4" />
+            <Setter Property="Cursor" Value="Hand" />
+        </Style>
+        <Style Selector="Button.cardButton /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="Transparent" />
         </Style>
 
         <!-- Hover: el efecto va en el contenedor de cada carta de la mano (hijo directo del ItemsControl)
