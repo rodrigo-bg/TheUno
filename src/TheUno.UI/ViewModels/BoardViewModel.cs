@@ -106,6 +106,14 @@ public partial class BoardViewModel : ViewModelBase
     [ObservableProperty]
     private string _winnerName = string.Empty;
 
+    /// <summary>Duración de la partida para la pantalla de victoria, en minutos y segundos (ej. "5:32").</summary>
+    [ObservableProperty]
+    private string _gameDurationText = string.Empty;
+
+    /// <summary>Puntos del ganador: la suma de las cartas que les quedaron a los demás.</summary>
+    [ObservableProperty]
+    private int _winnerScore;
+
     public BoardViewModel(IGameEngine engine, Action goToMenu, Action startNewGame)
     {
         _engine = engine;
@@ -402,8 +410,13 @@ public partial class BoardViewModel : ViewModelBase
 
     // ---------- Victoria ----------
 
-    /// <summary>El motor avisa que alguien se quedó sin cartas.</summary>
-    private void OnGameOver(GameOverEventArgs e) => ShowVictory(GetPlayerViewModel(e.Winner));
+    /// <summary>El motor avisa que alguien se quedó sin cartas, con la duración y sus puntos.</summary>
+    private void OnGameOver(GameOverEventArgs e)
+    {
+        GameDurationText = $"{(int)e.Duration.TotalMinutes}:{e.Duration.Seconds:00}";
+        WinnerScore = e.WinnerScore;
+        ShowVictory(GetPlayerViewModel(e.Winner));
+    }
 
     /// <summary>
     /// Termina la partida: tras una pausa de 3 segundos (para que se vea la última carta en la mesa)
