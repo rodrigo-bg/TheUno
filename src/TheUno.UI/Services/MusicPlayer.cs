@@ -9,16 +9,19 @@ using NAudio.Wave.SampleProviders;
 namespace TheUno.UI.Services;
 
 /// <summary>
-/// Reproduce la música de fondo en loop durante toda la aplicación (menú y partida).
+/// Reproduce en loop la música de fondo de la pantalla actual (menú o partida).
 /// En Windows usa NAudio y en macOS el reproductor afplay que trae el sistema.
 /// </summary>
 public sealed class MusicPlayer : IDisposable
 {
-    private static readonly string MusicPath =
-        Path.Combine(AppContext.BaseDirectory, "Assets", "Audio", "musica_8bit.mp3");
+    public const string MenuTrack = "Musica_crazy_8bit.mp3";
+    public const string BoardTrack = "Musica_chill_8bit.mp3";
 
-    private float _volume;
-    private bool _stopped;
+    private static readonly string AudioFolder = Path.Combine(AppContext.BaseDirectory, "Assets", "Audio");
+
+    private readonly float _volume;
+    private string? _currentTrack;
+    private string _musicPath = string.Empty;
 
     // Windows
     private MediaFoundationReader? _reader;
@@ -27,10 +30,19 @@ public sealed class MusicPlayer : IDisposable
     // macOS
     private Process? _afplay;
 
-    public void Start(int volume = 60)
+    public MusicPlayer(int volume = 60)
     {
         _volume = volume / 100f;
-        _stopped = false;
+    }
+
+    /// <summary>Cambia a la canción indicada; si ya está sonando no la reinicia.</summary>
+    public void Play(string track)
+    {
+        if (track == _currentTrack) return;
+
+        Stop();
+        _currentTrack = track;
+        _musicPath = Path.Combine(AudioFolder, track);
 
         // Si el sistema no tiene cómo reproducir audio el juego sigue sin música.
         try
@@ -47,14 +59,14 @@ public sealed class MusicPlayer : IDisposable
         catch (Exception ex)
         {
             Debug.WriteLine($"No se pudo reproducir la música: {ex.Message}");
-            Dispose();
+            Stop();
         }
     }
 
     [SupportedOSPlatform("windows")]
     private void StartWindows()
     {
-        _reader = new MediaFoundationReader(MusicPath);
+        _reader = new MediaFoundationReader(_musicPath);
         var volume = new VolumeSampleProvider(new LoopSampleProvider(_reader)) { Volume = _volume };
 
         _output = new WasapiPlayerBuilder().WithSharedMode().Build();
@@ -82,15 +94,16 @@ public sealed class MusicPlayer : IDisposable
         };
         info.ArgumentList.Add("-v");
         info.ArgumentList.Add(_volume.ToString(CultureInfo.InvariantCulture));
-        info.ArgumentList.Add(MusicPath);
+        info.ArgumentList.Add(_musicPath);
 
         var process = new Process { StartInfo = info, EnableRaisingEvents = true };
 
-        // afplay termina al acabar la canción: se vuelve a lanzar para mantener el loop.
+        // afplay termina al acabar la canción: se vuelve a lanzar para mantener el loop,
+        // salvo que mientras tanto se haya detenido o cambiado de canción.
         process.Exited += (_, _) =>
         {
             process.Dispose();
-            if (!_stopped)
+            if (_afplay == process)
             {
                 StartMac();
             }
@@ -100,26 +113,28 @@ public sealed class MusicPlayer : IDisposable
         process.Start();
     }
 
-    public void Dispose()
+    private void Stop()
     {
-        _stopped = true;
+        _currentTrack = null;
 
         if (OperatingSystem.IsWindows())
         {
             StopWindows();
         }
 
+        var afplay = _afplay;
+        _afplay = null;
         try
         {
-            _afplay?.Kill();
+            afplay?.Kill();
         }
         catch (Exception)
         {
             // El proceso ya había terminado.
         }
-
-        _afplay = null;
     }
+
+    public void Dispose() => Stop();
 
     /// <summary>Regresa al inicio del archivo cada vez que se acaba, para que la música no se detenga.</summary>
     private sealed class LoopSampleProvider : ISampleProvider

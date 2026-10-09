@@ -22,29 +22,7 @@
     </UserControl.Background>
 
     <UserControl.Styles>
-        <!-- Botones estilo 8 bits: esquinas rectas, borde negro grueso y sombra dura -->
-        <Style Selector="Button.pixelButton">
-            <Setter Property="Foreground" Value="White" />
-            <Setter Property="BorderBrush" Value="Black" />
-            <Setter Property="BorderThickness" Value="5" />
-            <Setter Property="CornerRadius" Value="0" />
-            <Setter Property="Padding" Value="24,30" />
-            <Setter Property="FontSize" Value="24" />
-            <Setter Property="HorizontalAlignment" Value="Stretch" />
-            <Setter Property="HorizontalContentAlignment" Value="Center" />
-            <Setter Property="Cursor" Value="Hand" />
-            <Setter Property="RenderTransform" Value="translate(0px, 0px)" />
-            <Setter Property="Effect">
-                <DropShadowEffect OffsetX="6" OffsetY="6" BlurRadius="0" Color="Black" Opacity="1" />
-            </Setter>
-        </Style>
-        <Style Selector="Button.pixelButton:pointerover /template/ ContentPresenter#PART_ContentPresenter">
-            <Setter Property="BorderBrush" Value="White" />
-            <Setter Property="Foreground" Value="White" />
-        </Style>
-        <Style Selector="Button.pixelButton:pressed">
-            <Setter Property="RenderTransform" Value="translate(4px, 4px)" />
-        </Style>
+        <!-- El estilo base de Button.pixelButton está en Styles/PixelStyles.axaml (compartido con el tablero) -->
 
         <!-- Colores tomados de la paleta de las cartas -->
         <Style Selector="Button.start">
