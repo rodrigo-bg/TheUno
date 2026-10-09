@@ -552,6 +552,27 @@
             </Border>
         </Grid>
 
+        <!-- Aviso de penalización por no cantar UNO: aparece unos segundos al centro de la mesa.
+             No bloquea los clics, el juego sigue mientras se ve. -->
+        <Border IsVisible="{Binding IsPenaltyNoticeOpen}"
+                IsHitTestVisible="False"
+                Background="#3A2213"
+                BorderBrush="Black"
+                BorderThickness="6"
+                Padding="32,24"
+                HorizontalAlignment="Center"
+                VerticalAlignment="Center"
+                BoxShadow="10 10 0 0 #000000">
+            <TextBlock Classes="pixelText"
+                       FontSize="20"
+                       Foreground="#FF0000"
+                       Text="{Binding PenaltyMessage}">
+                <TextBlock.Effect>
+                    <DropShadowEffect OffsetX="3" OffsetY="3" BlurRadius="0" Color="Black" Opacity="1" />
+                </TextBlock.Effect>
+            </TextBlock>
+        </Border>
+
         <!-- Selector de color para comodines: 4 cuadrantes en el mismo orden que el dibujo del comodín.
              No tiene botón de cancelar porque el juego no puede seguir sin un color. -->
         <Panel IsVisible="{Binding IsColorPickerOpen}" Background="#B3000000">

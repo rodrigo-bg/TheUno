@@ -22,6 +22,9 @@ public partial class BoardViewModel : ViewModelBase
     // Tiempo para cantar UNO después de tirar la penúltima carta
     private static readonly TimeSpan UnoWindow = TimeSpan.FromSeconds(2);
 
+    // Tiempo que se ve el aviso de penalización por no cantar UNO
+    private static readonly TimeSpan PenaltyNoticeDuration = TimeSpan.FromSeconds(2.5);
+
     private readonly IGameEngine _engine = new GameEngine();
 
     // Navegación: las pone MainWindowViewModel
@@ -38,6 +41,10 @@ public partial class BoardViewModel : ViewModelBase
     private DateTime _unoDeadline;
     private DispatcherTimer? _unoTimer;
     private TurnChangedEventArgs? _pendingTurnChange;
+
+    // Cuenta los avisos de penalización: si sale otro antes de que se oculte el primero,
+    // el temporizador del primero ya no lo oculta.
+    private int _penaltyNoticeCount;
 
     // ---------- Estado de la mesa ----------
 
@@ -78,6 +85,14 @@ public partial class BoardViewModel : ViewModelBase
     [ObservableProperty]
     private bool _isColorPickerOpen;
 
+    /// <summary>Muestra el aviso de que un jugador no cantó UNO y recibió 2 cartas.</summary>
+    [ObservableProperty]
+    private bool _isPenaltyNoticeOpen;
+
+    /// <summary>Texto del aviso, por ejemplo "¡JUGADOR 2 NO CANTÓ UNO! +2".</summary>
+    [ObservableProperty]
+    private string _penaltyMessage = string.Empty;
+
     /// <summary>Muestra la alerta que confirma si se quiere abandonar la partida.</summary>
     [ObservableProperty]
     private bool _isExitDialogOpen;
@@ -116,6 +131,7 @@ public partial class BoardViewModel : ViewModelBase
         _engine.OnCardPlayed += OnCardPlayed;
         _engine.OnCardDrawn += OnCardDrawn;
         _engine.OnGameOver += OnGameOver;
+        _engine.OnUnoPenalty += OnUnoPenalty;
     }
 
     /// <summary>Constructor para el diseñador de Rider/Avalonia.</summary>
@@ -349,6 +365,22 @@ public partial class BoardViewModel : ViewModelBase
         player.Model.HasDeclaredUno = true;
 
         if (player == _unoPlayer) CloseUnoWindow();
+    }
+
+    /// <summary>
+    /// El motor castigó a un jugador con 2 cartas por no cantar UNO. Las cartas ya llegaron
+    /// a su mano (OnCardDrawn); aquí solo se muestra el aviso unos segundos.
+    /// </summary>
+    private void OnUnoPenalty(Player player)
+    {
+        PenaltyMessage = $"¡{player.Name.ToUpperInvariant()} NO CANTÓ UNO! +2";
+        IsPenaltyNoticeOpen = true;
+
+        var notice = ++_penaltyNoticeCount;
+        DispatcherTimer.RunOnce(() =>
+        {
+            if (notice == _penaltyNoticeCount) IsPenaltyNoticeOpen = false;
+        }, PenaltyNoticeDuration);
     }
 
     // ---------- Salir de la partida ----------
