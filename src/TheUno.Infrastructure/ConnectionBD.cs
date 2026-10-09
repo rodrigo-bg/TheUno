@@ -1,5 +1,6 @@
 ﻿namespace TheUno.Infrastructure;
 
-public class Class1
+public class ConnectionBD
 {
+    
 }
