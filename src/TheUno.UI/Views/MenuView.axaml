@@ -62,8 +62,7 @@
                     Command="{Binding StartGameCommand}" />
             <Button Classes="pixelButton history"
                     Content="VER HISTORIAL"
-                    Command="{Binding ShowHistoryCommand}"
-                    ToolTip.Tip="Disponible pronto" />
+                    Command="{Binding ShowHistoryCommand}" />
         </StackPanel>
     </Grid>
 </UserControl>
