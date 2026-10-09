@@ -50,6 +50,15 @@ public partial class BoardViewModel : ViewModelBase
     [ObservableProperty]
     private CardViewModel _topDiscardCard;
 
+    /// <summary>
+    /// El jugador en turno ya robó y la carta robada se puede tirar: puede tirarla o pasar.
+    /// Mientras tanto no puede volver a robar.
+    /// </summary>
+    [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(DrawCardCommand))]
+    [NotifyCanExecuteChangedFor(nameof(PassTurnCommand))]
+    private bool _canPassTurn;
+
     // ---------- Diálogos ----------
 
     /// <summary>Muestra el selector de color que aparece al tirar un comodín o un +4.</summary>
@@ -91,6 +100,7 @@ public partial class BoardViewModel : ViewModelBase
         // Se escucha después de StartGame porque los PlayerViewModel aún no existían.
         _engine.OnTurnChanged += OnTurnChanged;
         _engine.OnCardPlayed += OnCardPlayed;
+        _engine.OnCardDrawn += OnCardDrawn;
     }
 
     /// <summary>Constructor para el diseñador de Rider/Avalonia.</summary>
@@ -137,6 +147,7 @@ public partial class BoardViewModel : ViewModelBase
         ActiveColor = e.ActiveColor;
         IsClockwise = e.Direction == 1;
         ActivePlayer = GetPlayerViewModel(e.CurrentPlayer);
+        CanPassTurn = false;
     }
 
     private PlayerViewModel GetPlayerViewModel(Player player)
@@ -176,6 +187,31 @@ public partial class BoardViewModel : ViewModelBase
         TopDiscardCard = new CardViewModel(e.Card);
         ActiveColor = e.ActiveColor;
     }
+
+    // ---------- Robar y pasar ----------
+
+    /// <summary>
+    /// El jugador en turno roba una carta del mazo. Si no se puede tirar, el motor pasa el turno solo;
+    /// si se puede, el jugador sigue en turno y elige entre tirarla o pasar.
+    /// </summary>
+    [RelayCommand(CanExecute = nameof(CanDrawCard))]
+    private void DrawCard()
+    {
+        var drawingPlayer = _engine.CurrentPlayer;
+        _engine.DrawCard();
+        CanPassTurn = _engine.CurrentPlayer == drawingPlayer;
+    }
+
+    private bool CanDrawCard() => !CanPassTurn;
+
+    [RelayCommand(CanExecute = nameof(CanPassTurn))]
+    private void PassTurn() => _engine.PassTurn();
+
+    /// <summary>
+    /// Aparece la carta robada en la mano de quien la recibió (también las de un +2 o +4,
+    /// o las de la penalización por no cantar UNO).
+    /// </summary>
+    private void OnCardDrawn(CardDrawnEventArgs e) => GetPlayerViewModel(e.Player).SyncHand();
 
     // ---------- Selector de color ----------
 

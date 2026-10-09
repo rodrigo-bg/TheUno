@@ -112,6 +112,28 @@
             <Setter Property="RenderTransform" Value="scale(0.97)" />
         </Style>
 
+        <!-- Botón para pasar turno después de robar (base en Styles/PixelStyles.axaml) -->
+        <Style Selector="Button.passButton">
+            <Setter Property="Background" Value="#222222" />
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="Padding" Value="14,12" />
+            <Setter Property="BorderThickness" Value="4" />
+            <Setter Property="HorizontalAlignment" Value="Center" />
+            <Setter Property="Margin" Value="0,14,0,0" />
+            <Setter Property="Opacity" Value="0" />
+            <Setter Property="IsHitTestVisible" Value="False" />
+            <Setter Property="Effect">
+                <DropShadowEffect OffsetX="4" OffsetY="4" BlurRadius="0" Color="Black" Opacity="1" />
+            </Setter>
+        </Style>
+        <Style Selector="Button.passButton.shown">
+            <Setter Property="Opacity" Value="1" />
+            <Setter Property="IsHitTestVisible" Value="True" />
+        </Style>
+        <Style Selector="Button.passButton:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="#444444" />
+        </Style>
+
         <!-- Sombra base de las cartas -->
         <Style Selector="Border.card">
             <Setter Property="BoxShadow" Value="0 2 6 0 #66000000" />
@@ -413,12 +435,19 @@
 
                 <!-- Pila de robo -->
                 <StackPanel Grid.Column="0">
-                    <Button Classes="drawPile" ToolTip.Tip="Robar una carta">
+                    <Button Classes="drawPile" ToolTip.Tip="Robar una carta"
+                            Command="{Binding DrawCardCommand}">
                         <Border Width="105" Height="165" CornerRadius="6" ClipToBounds="True">
                             <Image Source="{Binding DrawPileImage}" Stretch="UniformToFill" />
                         </Border>
                     </Button>
                     <TextBlock Classes="zoneLabel" Text="Robar" />
+                    <!-- Solo se muestra si la carta robada se puede tirar. Siempre ocupa su lugar
+                         (invisible) para que las pilas no se muevan cuando aparece. -->
+                    <Button Classes="pixelButton passButton"
+                            Classes.shown="{Binding CanPassTurn}"
+                            Content="PASAR"
+                            Command="{Binding PassTurnCommand}" />
                 </StackPanel>
 
                 <!-- Pila de descarte -->
