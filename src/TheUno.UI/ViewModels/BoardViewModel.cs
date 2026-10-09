@@ -19,6 +19,9 @@ public partial class BoardViewModel : ViewModelBase
 {
     private static readonly string[] PlayerNames = { "Jugador 1", "Jugador 2", "Jugador 3" };
 
+    // Tiempo para cantar UNO después de tirar la penúltima carta
+    private static readonly TimeSpan UnoWindow = TimeSpan.FromSeconds(2);
+
     private readonly IGameEngine _engine = new GameEngine();
 
     // Navegación: las pone MainWindowViewModel
@@ -29,6 +32,12 @@ public partial class BoardViewModel : ViewModelBase
     private Action<CardColor>? _onColorChosen;
 
     private bool _isGameOver;
+
+    // Ventana para cantar UNO: quién puede cantar, cuándo se acaba y el cambio de turno que espera.
+    private PlayerViewModel? _unoPlayer;
+    private DateTime _unoDeadline;
+    private DispatcherTimer? _unoTimer;
+    private TurnChangedEventArgs? _pendingTurnChange;
 
     // ---------- Estado de la mesa ----------
 
@@ -58,6 +67,10 @@ public partial class BoardViewModel : ViewModelBase
     [NotifyCanExecuteChangedFor(nameof(DrawCardCommand))]
     [NotifyCanExecuteChangedFor(nameof(PassTurnCommand))]
     private bool _canPassTurn;
+
+    /// <summary>Tiempo que queda para cantar UNO, de 1 (recién empieza) a 0 (se acabó). Llena la barra del botón.</summary>
+    [ObservableProperty]
+    private double _unoTimeLeft;
 
     // ---------- Diálogos ----------
 
@@ -138,8 +151,25 @@ public partial class BoardViewModel : ViewModelBase
         newValue.IsActive = true;
     }
 
-    /// <summary>El motor cambió de turno: se refresca toda la mesa con su estado.</summary>
+    /// <summary>
+    /// El motor cambió de turno. Si el jugador anterior tiene abierta su ventana para cantar UNO,
+    /// el cambio se guarda y se muestra hasta que cante o se acabe el tiempo.
+    /// </summary>
     private void OnTurnChanged(TurnChangedEventArgs e)
+    {
+        if (_unoPlayer is not null)
+        {
+            _pendingTurnChange = e;
+            // El motor ya avanzó: ninguna carta queda jugable hasta mostrar el nuevo turno.
+            UpdatePlayableCards();
+            return;
+        }
+
+        ApplyTurnChange(e);
+    }
+
+    /// <summary>Refresca toda la mesa con el estado del motor después de un cambio de turno.</summary>
+    private void ApplyTurnChange(TurnChangedEventArgs e)
     {
         Player1.SyncHand();
         Player2.SyncHand();
@@ -198,13 +228,17 @@ public partial class BoardViewModel : ViewModelBase
     /// <summary>
     /// Se refleja la carta tirada en la mesa. Normalmente después llega el cambio de turno,
     /// pero si era la última carta del jugador la partida termina y ya no hay cambio de turno.
+    /// Si era la penúltima, se abre su ventana para cantar UNO.
     /// </summary>
     private void OnCardPlayed(CardPlayedEventArgs e)
     {
-        GetPlayerViewModel(e.Player).SyncHand();
+        var player = GetPlayerViewModel(e.Player);
+        player.SyncHand();
         TopDiscardCard = new CardViewModel(e.Card);
         ActiveColor = e.ActiveColor;
         UpdatePlayableCards();
+
+        if (e.Player.Hand.Count == 1 && !e.Player.HasDeclaredUno) OpenUnoWindow(player);
     }
 
     // ---------- Robar y pasar ----------
@@ -222,7 +256,7 @@ public partial class BoardViewModel : ViewModelBase
         UpdatePlayableCards();
     }
 
-    private bool CanDrawCard() => !CanPassTurn && !_isGameOver;
+    private bool CanDrawCard() => !CanPassTurn && !_isGameOver && _unoPlayer is null;
 
     [RelayCommand(CanExecute = nameof(CanPassTurn))]
     private void PassTurn() => _engine.PassTurn();
@@ -257,16 +291,64 @@ public partial class BoardViewModel : ViewModelBase
 
     // ---------- UNO ----------
 
-    /// <summary>El jugador dueño del botón ¡UNO! canta UNO.</summary>
+    /// <summary>
+    /// Después de tirar su penúltima carta, el jugador tiene 2 segundos para picar ¡UNO!.
+    /// Mientras tanto se ve una barra que se vacía y el turno del siguiente todavía no se muestra.
+    /// </summary>
+    private void OpenUnoWindow(PlayerViewModel player)
+    {
+        _unoPlayer = player;
+        _unoDeadline = DateTime.UtcNow + UnoWindow;
+        UnoTimeLeft = 1;
+        player.ShowUnoButton = true;
+        DrawCardCommand.NotifyCanExecuteChanged();
+
+        _unoTimer = new DispatcherTimer(TimeSpan.FromMilliseconds(30), DispatcherPriority.Normal, OnUnoTimerTick);
+        _unoTimer.Start();
+    }
+
+    private void OnUnoTimerTick(object? sender, EventArgs e)
+    {
+        var left = (_unoDeadline - DateTime.UtcNow) / UnoWindow;
+        if (left <= 0)
+        {
+            CloseUnoWindow();
+            return;
+        }
+
+        UnoTimeLeft = left;
+    }
+
+    /// <summary>Se acabó el tiempo o ya cantó: se quita el botón y se muestra el turno del siguiente.</summary>
+    private void CloseUnoWindow()
+    {
+        _unoTimer?.Stop();
+        _unoTimer = null;
+        UnoTimeLeft = 0;
+
+        if (_unoPlayer is not null) _unoPlayer.ShowUnoButton = false;
+        _unoPlayer = null;
+        DrawCardCommand.NotifyCanExecuteChanged();
+
+        if (_pendingTurnChange is { } pending)
+        {
+            _pendingTurnChange = null;
+            ApplyTurnChange(pending);
+        }
+    }
+
+    /// <summary>El jugador dueño del botón ¡UNO! canta UNO: el turno pasa en ese momento.</summary>
     [RelayCommand]
     private void CallUno(PlayerViewModel player)
     {
         player.HasCalledUno = true;
 
-        // El botón aparece después de tirar la penúltima carta, cuando el turno ya es de otro,
-        // así que no sirve CallUno() del motor (solo marca al jugador en turno). Se marca
-        // directo al jugador del Core: el motor revisa esta propiedad antes de castigar con +2.
+        // Cuando aparece el botón el motor ya le pasó el turno al siguiente, así que no sirve
+        // CallUno() del motor (solo marca al jugador en turno). Se marca directo al jugador
+        // del Core: el motor revisa esta propiedad antes de castigar con +2.
         player.Model.HasDeclaredUno = true;
+
+        if (player == _unoPlayer) CloseUnoWindow();
     }
 
     // ---------- Salir de la partida ----------

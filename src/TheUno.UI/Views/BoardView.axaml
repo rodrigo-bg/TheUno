@@ -294,16 +294,17 @@
             <Setter Property="Foreground" Value="White" />
         </Style>
 
-        <!-- Botón ¡UNO!: rojo y pequeño a propósito, para que haya que apuntarle bien -->
+        <!-- Botón ¡UNO!: rojo y no muy grande, para que haya que apuntarle bien.
+             Aparece 2 segundos después de tirar la penúltima carta, con una barra que se vacía. -->
         <Style Selector="Button.unoButton">
             <Setter Property="Background" Value="#FF0000" />
             <Setter Property="Foreground" Value="White" />
             <Setter Property="BorderBrush" Value="Black" />
             <Setter Property="BorderThickness" Value="3" />
             <Setter Property="CornerRadius" Value="0" />
-            <Setter Property="FontSize" Value="10" />
-            <Setter Property="Width" Value="70" />
-            <Setter Property="Height" Value="30" />
+            <Setter Property="FontSize" Value="15" />
+            <Setter Property="Width" Value="105" />
+            <Setter Property="Height" Value="45" />
             <Setter Property="Padding" Value="0" />
             <Setter Property="HorizontalContentAlignment" Value="Center" />
             <Setter Property="VerticalContentAlignment" Value="Center" />
@@ -320,6 +321,18 @@
         </Style>
         <Style Selector="Button.unoButton:pressed">
             <Setter Property="RenderTransform" Value="translate(2px, 2px)" />
+        </Style>
+        <!-- Barra del tiempo que queda para cantar UNO (dentro del botón) -->
+        <Style Selector="ProgressBar.unoTimer">
+            <Setter Property="Minimum" Value="0" />
+            <Setter Property="Maximum" Value="1" />
+            <Setter Property="Width" Value="80" />
+            <Setter Property="Height" Value="6" />
+            <Setter Property="MinWidth" Value="0" />
+            <Setter Property="MinHeight" Value="0" />
+            <Setter Property="CornerRadius" Value="0" />
+            <Setter Property="Foreground" Value="White" />
+            <Setter Property="Background" Value="#66000000" />
         </Style>
         <!-- Pantalla de victoria: botones del mismo tamaño -->
         <Style Selector="Button.victoryButton">
@@ -473,32 +486,44 @@
             </Grid>
 
             <!-- Botones ¡UNO!: uno por jugador, frente a sus cartas (hacia el centro de la mesa).
-                 Solo aparecen cuando ese jugador tiene 1 carta y todavía no ha cantado UNO.
+                 Solo aparecen durante los 2 segundos que siguen a tirar su penúltima carta.
                  Los de los jugadores 2 y 3 quedan a la altura de su única carta. -->
             <Button Grid.Row="1" Grid.Column="1"
                     Classes="unoButton"
                     HorizontalAlignment="Center" VerticalAlignment="Bottom"
                     Margin="0,0,0,8"
-                    Content="¡UNO!"
                     IsVisible="{Binding Player1.ShowUnoButton}"
                     Command="{Binding CallUnoCommand}"
-                    CommandParameter="{Binding Player1}" />
+                    CommandParameter="{Binding Player1}">
+                <StackPanel Spacing="5">
+                    <TextBlock Text="¡UNO!" HorizontalAlignment="Center" />
+                    <ProgressBar Classes="unoTimer" Value="{Binding UnoTimeLeft}" />
+                </StackPanel>
+            </Button>
             <Button Grid.Row="1" Grid.Column="1"
                     Classes="unoButton"
                     HorizontalAlignment="Left" VerticalAlignment="Top"
-                    Margin="6,66,0,0"
-                    Content="¡UNO!"
+                    Margin="6,58,0,0"
                     IsVisible="{Binding Player2.ShowUnoButton}"
                     Command="{Binding CallUnoCommand}"
-                    CommandParameter="{Binding Player2}" />
+                    CommandParameter="{Binding Player2}">
+                <StackPanel Spacing="5">
+                    <TextBlock Text="¡UNO!" HorizontalAlignment="Center" />
+                    <ProgressBar Classes="unoTimer" Value="{Binding UnoTimeLeft}" />
+                </StackPanel>
+            </Button>
             <Button Grid.Row="1" Grid.Column="1"
                     Classes="unoButton"
                     HorizontalAlignment="Right" VerticalAlignment="Top"
-                    Margin="0,66,6,0"
-                    Content="¡UNO!"
+                    Margin="0,58,6,0"
                     IsVisible="{Binding Player3.ShowUnoButton}"
                     Command="{Binding CallUnoCommand}"
-                    CommandParameter="{Binding Player3}" />
+                    CommandParameter="{Binding Player3}">
+                <StackPanel Spacing="5">
+                    <TextBlock Text="¡UNO!" HorizontalAlignment="Center" />
+                    <ProgressBar Classes="unoTimer" Value="{Binding UnoTimeLeft}" />
+                </StackPanel>
+            </Button>
 
             <!-- Jugador 1 (Abajo) -->
             <Border Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="3"
