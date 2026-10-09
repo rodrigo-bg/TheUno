@@ -18,19 +18,26 @@
     </Design.DataContext>
 
     <UserControl.DataTemplates>
-        <!-- Carta reutilizable: muestra la imagen correspondiente con esquinas ligeramente redondeadas -->
+        <!-- Carta reutilizable: muestra la imagen correspondiente con esquinas ligeramente redondeadas.
+             Es un botón: al hacer clic se tira la carta (solo responde en la mano del jugador en turno,
+             las demás manos están deshabilitadas). -->
         <DataTemplate DataType="vm:CardViewModel">
-            <!-- El borde exterior dibuja la sombra y el contorno; el interior recorta la imagen
-                 (si fuera uno solo, el recorte también cortaría la sombra) -->
-            <Border Classes="card" CornerRadius="4">
-                <Border CornerRadius="4" ClipToBounds="True">
-                    <Panel>
-                        <Image Source="{Binding Image}" Stretch="UniformToFill" />
-                        <!-- Capa negra que oscurece la carta cuando no es el turno de su jugador -->
-                        <Border Classes="cardShade" />
-                    </Panel>
+            <Button Classes="cardButton"
+                    Classes.playable="{Binding IsPlayable}"
+                    Command="{Binding $parent[UserControl].((vm:BoardViewModel)DataContext).PlayCardCommand}"
+                    CommandParameter="{Binding}">
+                <!-- El borde exterior dibuja la sombra y el contorno; el interior recorta la imagen
+                     (si fuera uno solo, el recorte también cortaría la sombra) -->
+                <Border Classes="card" CornerRadius="4">
+                    <Border CornerRadius="4" ClipToBounds="True">
+                        <Panel>
+                            <Image Source="{Binding Image}" Stretch="UniformToFill" />
+                            <!-- Capa negra que oscurece la carta cuando no es el turno de su jugador -->
+                            <Border Classes="cardShade" />
+                        </Panel>
+                    </Border>
                 </Border>
-            </Border>
+            </Button>
         </DataTemplate>
     </UserControl.DataTemplates>
 
@@ -53,6 +60,12 @@
             <Setter Property="IsVisible" Value="False" />
         </Style>
         <Style Selector="ItemsControl:disabled Border.cardShade">
+            <Setter Property="IsVisible" Value="True" />
+        </Style>
+        <!-- En la mano del jugador en turno, las cartas que no se pueden tirar se oscurecen un poco
+             (menos que las manos de los demás) -->
+        <Style Selector="Border.playerZone.active Button.cardButton:not(.playable) Border.cardShade">
+            <Setter Property="Background" Value="#40000000" />
             <Setter Property="IsVisible" Value="True" />
         </Style>
         <!-- Textos estilo 8 bits: fuente pixel y sombra dura sin desenfoque -->
@@ -106,9 +119,45 @@
             <Setter Property="RenderTransform" Value="scale(0.97)" />
         </Style>
 
+        <!-- Botón para pasar turno después de robar (base en Styles/PixelStyles.axaml) -->
+        <Style Selector="Button.passButton">
+            <Setter Property="Background" Value="#222222" />
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="Padding" Value="14,12" />
+            <Setter Property="BorderThickness" Value="4" />
+            <Setter Property="HorizontalAlignment" Value="Center" />
+            <Setter Property="Margin" Value="0,14,0,0" />
+            <Setter Property="Opacity" Value="0" />
+            <Setter Property="IsHitTestVisible" Value="False" />
+            <Setter Property="Effect">
+                <DropShadowEffect OffsetX="4" OffsetY="4" BlurRadius="0" Color="Black" Opacity="1" />
+            </Setter>
+        </Style>
+        <Style Selector="Button.passButton.shown">
+            <Setter Property="Opacity" Value="1" />
+            <Setter Property="IsHitTestVisible" Value="True" />
+        </Style>
+        <Style Selector="Button.passButton:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="#444444" />
+        </Style>
+
         <!-- Sombra base de las cartas -->
         <Style Selector="Border.card">
             <Setter Property="BoxShadow" Value="0 2 6 0 #66000000" />
+        </Style>
+
+        <!-- Botón de la carta: sin fondo, borde ni relleno, así solo se ve la carta.
+             El fondo se fija también en la plantilla porque Fluent lo cambia al pasar el mouse,
+             al presionar y al deshabilitar. -->
+        <Style Selector="Button.cardButton">
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="CornerRadius" Value="4" />
+            <Setter Property="Cursor" Value="Hand" />
+        </Style>
+        <Style Selector="Button.cardButton /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="Transparent" />
         </Style>
 
         <!-- Hover: el efecto va en el contenedor de cada carta de la mano (hijo directo del ItemsControl)
@@ -245,16 +294,17 @@
             <Setter Property="Foreground" Value="White" />
         </Style>
 
-        <!-- Botón ¡UNO!: rojo y pequeño a propósito, para que haya que apuntarle bien -->
+        <!-- Botón ¡UNO!: rojo y no muy grande, para que haya que apuntarle bien.
+             Aparece 2 segundos después de tirar la penúltima carta, con una barra que se vacía. -->
         <Style Selector="Button.unoButton">
             <Setter Property="Background" Value="#FF0000" />
             <Setter Property="Foreground" Value="White" />
             <Setter Property="BorderBrush" Value="Black" />
             <Setter Property="BorderThickness" Value="3" />
             <Setter Property="CornerRadius" Value="0" />
-            <Setter Property="FontSize" Value="10" />
-            <Setter Property="Width" Value="70" />
-            <Setter Property="Height" Value="30" />
+            <Setter Property="FontSize" Value="15" />
+            <Setter Property="Width" Value="105" />
+            <Setter Property="Height" Value="45" />
             <Setter Property="Padding" Value="0" />
             <Setter Property="HorizontalContentAlignment" Value="Center" />
             <Setter Property="VerticalContentAlignment" Value="Center" />
@@ -271,6 +321,18 @@
         </Style>
         <Style Selector="Button.unoButton:pressed">
             <Setter Property="RenderTransform" Value="translate(2px, 2px)" />
+        </Style>
+        <!-- Barra del tiempo que queda para cantar UNO (dentro del botón) -->
+        <Style Selector="ProgressBar.unoTimer">
+            <Setter Property="Minimum" Value="0" />
+            <Setter Property="Maximum" Value="1" />
+            <Setter Property="Width" Value="80" />
+            <Setter Property="Height" Value="6" />
+            <Setter Property="MinWidth" Value="0" />
+            <Setter Property="MinHeight" Value="0" />
+            <Setter Property="CornerRadius" Value="0" />
+            <Setter Property="Foreground" Value="White" />
+            <Setter Property="Background" Value="#66000000" />
         </Style>
         <!-- Pantalla de victoria: botones del mismo tamaño -->
         <Style Selector="Button.victoryButton">
@@ -393,12 +455,19 @@
 
                 <!-- Pila de robo -->
                 <StackPanel Grid.Column="0">
-                    <Button Classes="drawPile" ToolTip.Tip="Robar una carta">
+                    <Button Classes="drawPile" ToolTip.Tip="Robar una carta"
+                            Command="{Binding DrawCardCommand}">
                         <Border Width="105" Height="165" CornerRadius="6" ClipToBounds="True">
                             <Image Source="{Binding DrawPileImage}" Stretch="UniformToFill" />
                         </Border>
                     </Button>
                     <TextBlock Classes="zoneLabel" Text="Robar" />
+                    <!-- Solo se muestra si la carta robada se puede tirar. Siempre ocupa su lugar
+                         (invisible) para que las pilas no se muevan cuando aparece. -->
+                    <Button Classes="pixelButton passButton"
+                            Classes.shown="{Binding CanPassTurn}"
+                            Content="PASAR"
+                            Command="{Binding PassTurnCommand}" />
                 </StackPanel>
 
                 <!-- Pila de descarte -->
@@ -417,32 +486,44 @@
             </Grid>
 
             <!-- Botones ¡UNO!: uno por jugador, frente a sus cartas (hacia el centro de la mesa).
-                 Solo aparecen cuando ese jugador tiene 1 carta y todavía no ha cantado UNO.
+                 Solo aparecen durante los 2 segundos que siguen a tirar su penúltima carta.
                  Los de los jugadores 2 y 3 quedan a la altura de su única carta. -->
             <Button Grid.Row="1" Grid.Column="1"
                     Classes="unoButton"
                     HorizontalAlignment="Center" VerticalAlignment="Bottom"
                     Margin="0,0,0,8"
-                    Content="¡UNO!"
                     IsVisible="{Binding Player1.ShowUnoButton}"
                     Command="{Binding CallUnoCommand}"
-                    CommandParameter="{Binding Player1}" />
+                    CommandParameter="{Binding Player1}">
+                <StackPanel Spacing="5">
+                    <TextBlock Text="¡UNO!" HorizontalAlignment="Center" />
+                    <ProgressBar Classes="unoTimer" Value="{Binding UnoTimeLeft}" />
+                </StackPanel>
+            </Button>
             <Button Grid.Row="1" Grid.Column="1"
                     Classes="unoButton"
                     HorizontalAlignment="Left" VerticalAlignment="Top"
-                    Margin="6,66,0,0"
-                    Content="¡UNO!"
+                    Margin="6,58,0,0"
                     IsVisible="{Binding Player2.ShowUnoButton}"
                     Command="{Binding CallUnoCommand}"
-                    CommandParameter="{Binding Player2}" />
+                    CommandParameter="{Binding Player2}">
+                <StackPanel Spacing="5">
+                    <TextBlock Text="¡UNO!" HorizontalAlignment="Center" />
+                    <ProgressBar Classes="unoTimer" Value="{Binding UnoTimeLeft}" />
+                </StackPanel>
+            </Button>
             <Button Grid.Row="1" Grid.Column="1"
                     Classes="unoButton"
                     HorizontalAlignment="Right" VerticalAlignment="Top"
-                    Margin="0,66,6,0"
-                    Content="¡UNO!"
+                    Margin="0,58,6,0"
                     IsVisible="{Binding Player3.ShowUnoButton}"
                     Command="{Binding CallUnoCommand}"
-                    CommandParameter="{Binding Player3}" />
+                    CommandParameter="{Binding Player3}">
+                <StackPanel Spacing="5">
+                    <TextBlock Text="¡UNO!" HorizontalAlignment="Center" />
+                    <ProgressBar Classes="unoTimer" Value="{Binding UnoTimeLeft}" />
+                </StackPanel>
+            </Button>
 
             <!-- Jugador 1 (Abajo) -->
             <Border Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="3"
@@ -470,6 +551,27 @@
                 </DockPanel>
             </Border>
         </Grid>
+
+        <!-- Aviso de penalización por no cantar UNO: aparece unos segundos al centro de la mesa.
+             No bloquea los clics, el juego sigue mientras se ve. -->
+        <Border IsVisible="{Binding IsPenaltyNoticeOpen}"
+                IsHitTestVisible="False"
+                Background="#3A2213"
+                BorderBrush="Black"
+                BorderThickness="6"
+                Padding="32,24"
+                HorizontalAlignment="Center"
+                VerticalAlignment="Center"
+                BoxShadow="10 10 0 0 #000000">
+            <TextBlock Classes="pixelText"
+                       FontSize="20"
+                       Foreground="#FF0000"
+                       Text="{Binding PenaltyMessage}">
+                <TextBlock.Effect>
+                    <DropShadowEffect OffsetX="3" OffsetY="3" BlurRadius="0" Color="Black" Opacity="1" />
+                </TextBlock.Effect>
+            </TextBlock>
+        </Border>
 
         <!-- Selector de color para comodines: 4 cuadrantes en el mismo orden que el dibujo del comodín.
              No tiene botón de cancelar porque el juego no puede seguir sin un color. -->
@@ -572,6 +674,15 @@
                             <DropShadowEffect OffsetX="3" OffsetY="3" BlurRadius="0" Color="Black" Opacity="1" />
                         </TextBlock.Effect>
                     </TextBlock>
+                    <!-- Datos de la partida que entrega el motor al terminar -->
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="48" Margin="0,8,0,0">
+                        <TextBlock Classes="pixelText" FontSize="14">
+                            <Run Text="DURACIÓN " /><Run Foreground="#E6B400" Text="{Binding GameDurationText}" />
+                        </TextBlock>
+                        <TextBlock Classes="pixelText" FontSize="14">
+                            <Run Text="PUNTOS " /><Run Foreground="#E6B400" Text="{Binding WinnerScore}" />
+                        </TextBlock>
+                    </StackPanel>
                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="32" Margin="0,28,0,0">
                         <Button Classes="pixelButton victoryButton cancel"
                                 Content="Regresar al menú"

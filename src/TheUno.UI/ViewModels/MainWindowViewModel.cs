@@ -1,10 +1,11 @@
 using CommunityToolkit.Mvvm.ComponentModel;
+using TheUno.Core.Engine;
 using TheUno.UI.Services;
 
 namespace TheUno.UI.ViewModels;
 
 /// <summary>
-/// Controla qué pantalla se muestra en la ventana principal (menú o tablero)
+/// Controla qué pantalla se muestra en la ventana principal (menú, tablero o historial)
 /// y la música que suena en cada una.
 /// </summary>
 public partial class MainWindowViewModel : ViewModelBase
@@ -27,15 +28,21 @@ public partial class MainWindowViewModel : ViewModelBase
     private void PlayMusicFor(ViewModelBase view) =>
         _music.Play(view is BoardViewModel ? MusicPlayer.BoardTrack : MusicPlayer.MenuTrack);
 
-    private MenuViewModel CreateMenu() => new(StartGame);
+    private MenuViewModel CreateMenu() => new(StartGame, ShowHistory);
 
     private void StartGame()
     {
         // "Volver a jugar" en la pantalla de victoria vuelve a llamar a StartGame: partida nueva.
-        CurrentView = new BoardViewModel(ShowMenu, StartGame);
+        // Cada partida usa un motor nuevo; el tablero lo recibe ya creado.
+        CurrentView = new BoardViewModel(new GameEngine(), ShowMenu, StartGame);
     }
 
-    // Al regresar se crea un menú nuevo; la partida anterior se descarta.
+    private void ShowHistory()
+    {
+        CurrentView = new StatsViewModel(ShowMenu);
+    }
+
+    // Al regresar se crea un menú nuevo; la partida o el historial anterior se descartan.
     private void ShowMenu()
     {
         CurrentView = CreateMenu();

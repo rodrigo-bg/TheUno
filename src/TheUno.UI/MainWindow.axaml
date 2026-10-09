@@ -23,6 +23,9 @@
         <DataTemplate DataType="vm:BoardViewModel">
             <views:BoardView />
         </DataTemplate>
+        <DataTemplate DataType="vm:StatsViewModel">
+            <views:StatsView />
+        </DataTemplate>
     </Window.DataTemplates>
 
     <ContentControl Content="{Binding CurrentView}" />
