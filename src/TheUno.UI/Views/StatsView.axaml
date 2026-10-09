@@ -1,0 +1,127 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="using:TheUno.UI.ViewModels"
+             xmlns:controls="using:TheUno.UI.Controls"
+             mc:Ignorable="d" d:DesignWidth="1280" d:DesignHeight="720"
+             x:Class="TheUno.UI.Views.StatsView"
+             x:DataType="vm:StatsViewModel"
+             x:CompileBindings="True"
+             RenderOptions.BitmapInterpolationMode="None">
+
+    <Design.DataContext>
+        <vm:StatsViewModel />
+    </Design.DataContext>
+
+    <!-- Mismo fondo que el menú -->
+    <UserControl.Background>
+        <ImageBrush Source="avares://TheUno.UI/Assets/Backgrounds/menu_8bit.jpg"
+                    Stretch="UniformToFill"
+                    AlignmentX="Left" />
+    </UserControl.Background>
+
+    <UserControl.Styles>
+        <!-- Botón para regresar al menú (base en Styles/PixelStyles.axaml), igual al del tablero -->
+        <Style Selector="Button.backButton">
+            <Setter Property="Background" Value="#222222" />
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="Padding" Value="14,12" />
+            <Setter Property="BorderThickness" Value="4" />
+            <Setter Property="HorizontalAlignment" Value="Left" />
+            <Setter Property="VerticalAlignment" Value="Top" />
+            <Setter Property="Margin" Value="20,20,0,0" />
+            <Setter Property="Effect">
+                <DropShadowEffect OffsetX="4" OffsetY="4" BlurRadius="0" Color="Black" Opacity="1" />
+            </Setter>
+        </Style>
+        <Style Selector="Button.backButton:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="#444444" />
+        </Style>
+
+        <!-- Tabla: encabezados amarillos, renglones blancos y el primer lugar en amarillo -->
+        <Style Selector="TextBlock.header">
+            <Setter Property="FontSize" Value="13" />
+            <Setter Property="Foreground" Value="#E6B400" />
+            <Setter Property="HorizontalAlignment" Value="Center" />
+        </Style>
+        <Style Selector="TextBlock.cell">
+            <Setter Property="FontSize" Value="16" />
+            <Setter Property="Foreground" Value="White" />
+            <Setter Property="HorizontalAlignment" Value="Center" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+        </Style>
+        <Style Selector="TextBlock.name">
+            <Setter Property="HorizontalAlignment" Value="Left" />
+        </Style>
+        <Style Selector="Border.row.first TextBlock.cell">
+            <Setter Property="Foreground" Value="#E6B400" />
+        </Style>
+        <Style Selector="Border.row">
+            <Setter Property="Padding" Value="0,14" />
+            <Setter Property="BorderBrush" Value="#66000000" />
+            <Setter Property="BorderThickness" Value="0,3,0,0" />
+        </Style>
+        <Style Selector="TextBlock.header, TextBlock.cell">
+            <Setter Property="Effect">
+                <DropShadowEffect OffsetX="2" OffsetY="2" BlurRadius="0" Color="Black" Opacity="1" />
+            </Setter>
+        </Style>
+    </UserControl.Styles>
+
+    <Panel>
+        <!-- Capa oscura para que la tabla se lea bien sobre la taberna -->
+        <Panel Background="#99000000" />
+
+        <Button Classes="pixelButton backButton"
+                Content="← MENU"
+                Command="{Binding BackToMenuCommand}" />
+
+        <StackPanel HorizontalAlignment="Center"
+                    VerticalAlignment="Center"
+                    Spacing="40">
+            <controls:OutlinedText Text="HISTORIAL"
+                                   FontSize="56"
+                                   Fill="#E6B400"
+                                   Stroke="White"
+                                   StrokeThickness="4"
+                                   ShadowOffset="6"
+                                   HorizontalAlignment="Center" />
+
+            <Border Background="#3A2213"
+                    BorderBrush="Black"
+                    BorderThickness="6"
+                    Padding="32,24"
+                    BoxShadow="10 10 0 0 #000000">
+                <StackPanel>
+                    <!-- Encabezados: mismas columnas que los renglones -->
+                    <Grid ColumnDefinitions="40,200,140,140,140,160" Margin="0,0,0,14">
+                        <TextBlock Grid.Column="0" Classes="header" Text="#" />
+                        <TextBlock Grid.Column="1" Classes="header" Text="JUGADOR" HorizontalAlignment="Left" />
+                        <TextBlock Grid.Column="2" Classes="header" Text="PARTIDAS" />
+                        <TextBlock Grid.Column="3" Classes="header" Text="VICTORIAS" />
+                        <TextBlock Grid.Column="4" Classes="header" Text="DERROTAS" />
+                        <TextBlock Grid.Column="5" Classes="header" Text="% VICTORIAS" />
+                    </Grid>
+
+                    <ItemsControl ItemsSource="{Binding Rows}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate DataType="vm:LeaderboardRow">
+                                <Border Classes="row" Classes.first="{Binding IsFirst}">
+                                    <Grid ColumnDefinitions="40,200,140,140,140,160">
+                                        <TextBlock Grid.Column="0" Classes="cell" Text="{Binding Position}" />
+                                        <TextBlock Grid.Column="1" Classes="cell name" Text="{Binding Name}" />
+                                        <TextBlock Grid.Column="2" Classes="cell" Text="{Binding MatchesPlayed}" />
+                                        <TextBlock Grid.Column="3" Classes="cell" Text="{Binding MatchesWon}" />
+                                        <TextBlock Grid.Column="4" Classes="cell" Text="{Binding MatchesLost}" />
+                                        <TextBlock Grid.Column="5" Classes="cell" Text="{Binding WinRateText}" />
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
+            </Border>
+        </StackPanel>
+    </Panel>
+</UserControl>
