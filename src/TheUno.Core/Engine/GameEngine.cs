@@ -488,9 +488,18 @@ public class GameEngine : IGameEngine
                 }
             }
 
+            // Registrar en auditoría de base de datos
+            LogAction(
+                winner, 
+                GameActionType.GameOver, 
+                "Victoria con " + totalScore.ToString() + " puntos", 
+                null
+            );
+
+            // Notificar a Avalonia
             if (OnGameOver != null)
             {
-                OnGameOver(new GameOverEventArgs(winner, duration, _totalTurns));
+                OnGameOver(new GameOverEventArgs(winner, duration, _totalTurns, totalScore));
             }
         }
 
