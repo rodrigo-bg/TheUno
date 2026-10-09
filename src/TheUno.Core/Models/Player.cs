@@ -34,4 +34,30 @@ public class Player {
         }
         return totalScore;
     }
+    
+    public void AddCard(Card card)
+    {
+        if (card != null)
+        {
+            Hand.Add(card);
+        }
+    }
+
+    public bool RemoveCard(Card card)
+    {
+        if (card == null)
+        {
+            return false;
+        }
+        return Hand.Remove(card);
+    }
+
+    public bool HasCard(Card card)
+    {
+        if (card == null)
+        {
+            return false;
+        }
+        return Hand.Contains(card);
+    }
 }

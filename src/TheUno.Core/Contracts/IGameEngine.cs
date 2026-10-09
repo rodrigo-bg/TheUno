@@ -1,3 +1,5 @@
+using System;
+using System.Collections.Generic;
 using TheUno.Core.Events;
 using TheUno.Core.Models;
 
@@ -24,6 +26,6 @@ public interface IGameEngine
     bool CanPlayCard(Card card);
     void PlayCard(Card card, CardColor? chosenColor = null);
     void DrawCard();
+    void PassTurn();
     void CallUno();
 }
-
