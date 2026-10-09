@@ -3,6 +3,8 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:vm="using:TheUno.UI.ViewModels"
+             xmlns:core="using:TheUno.Core.Models"
+             xmlns:controls="using:TheUno.UI.Controls"
              mc:Ignorable="d" d:DesignWidth="1280" d:DesignHeight="800"
              x:Class="TheUno.UI.Views.BoardView"
              x:DataType="vm:BoardViewModel"
@@ -18,8 +20,16 @@
     <UserControl.DataTemplates>
         <!-- Carta reutilizable: muestra la imagen correspondiente con esquinas ligeramente redondeadas -->
         <DataTemplate DataType="vm:CardViewModel">
-            <Border Classes="card" CornerRadius="4" ClipToBounds="True" BoxShadow="0 2 6 0 #66000000">
-                <Image Source="{Binding Image}" Stretch="UniformToFill" />
+            <!-- El borde exterior dibuja la sombra y el contorno; el interior recorta la imagen
+                 (si fuera uno solo, el recorte también cortaría la sombra) -->
+            <Border Classes="card" CornerRadius="4">
+                <Border CornerRadius="4" ClipToBounds="True">
+                    <Panel>
+                        <Image Source="{Binding Image}" Stretch="UniformToFill" />
+                        <!-- Capa negra que oscurece la carta cuando no es el turno de su jugador -->
+                        <Border Classes="cardShade" />
+                    </Panel>
+                </Border>
             </Border>
         </DataTemplate>
     </UserControl.DataTemplates>
@@ -36,6 +46,15 @@
             <Setter Property="Padding" Value="12" />
             <Setter Property="Margin" Value="12" />
         </Style>
+
+        <!-- Turno activo: el nombre va en amarillo (más abajo) y las manos de los demás se oscurecen -->
+        <Style Selector="Border.cardShade">
+            <Setter Property="Background" Value="#73000000" />
+            <Setter Property="IsVisible" Value="False" />
+        </Style>
+        <Style Selector="ItemsControl:disabled Border.cardShade">
+            <Setter Property="IsVisible" Value="True" />
+        </Style>
         <!-- Textos estilo 8 bits: fuente pixel y sombra dura sin desenfoque -->
         <Style Selector="TextBlock.pixelText">
             <Setter Property="FontFamily" Value="{StaticResource PixelFont}" />
@@ -49,6 +68,10 @@
             <Setter Property="Effect">
                 <DropShadowEffect OffsetX="2" OffsetY="2" BlurRadius="0" Color="Black" Opacity="1" />
             </Setter>
+        </Style>
+        <!-- Va después de pixelText para que el amarillo del turno activo gane sobre el blanco -->
+        <Style Selector="Border.playerZone.active TextBlock.playerName">
+            <Setter Property="Foreground" Value="#E6B400" />
         </Style>
         <Style Selector="TextBlock.zoneLabel">
             <Setter Property="FontSize" Value="10" />
@@ -83,6 +106,41 @@
             <Setter Property="RenderTransform" Value="scale(0.97)" />
         </Style>
 
+        <!-- Sombra base de las cartas -->
+        <Style Selector="Border.card">
+            <Setter Property="BoxShadow" Value="0 2 6 0 #66000000" />
+        </Style>
+
+        <!-- Hover: el efecto va en el contenedor de cada carta de la mano (hijo directo del ItemsControl)
+             y no en la carta, porque las cartas laterales están dentro de un control que las gira
+             y recorta todo lo que sale de su espacio. -->
+        <Style Selector="ItemsControl > ContentPresenter">
+            <Setter Property="CornerRadius" Value="4" />
+            <Setter Property="RenderTransform" Value="translate(0px, 0px)" />
+            <Setter Property="Transitions">
+                <Transitions>
+                    <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.12" />
+                </Transitions>
+            </Setter>
+        </Style>
+        <!-- Solo en la mano del jugador en turno: contorno amarillo, se dibuja encima de sus
+             vecinas y se mueve hacia el centro de la mesa -->
+        <Style Selector="Border.playerZone.active ItemsControl > ContentPresenter:pointerover">
+            <Setter Property="BoxShadow" Value="0 0 0 4 #E6B400, 0 6 10 0 #99000000" />
+            <Setter Property="ZIndex" Value="1" />
+        </Style>
+        <!-- Sin esto el panel horizontal estira el contenedor a toda la altura y el contorno queda más alto que la carta -->
+        <Style Selector="ItemsControl.bottomHand > ContentPresenter">
+            <Setter Property="VerticalAlignment" Value="Top" />
+        </Style>
+        <Style Selector="Border.playerZone.active ItemsControl.bottomHand > ContentPresenter:pointerover">
+            <Setter Property="RenderTransform" Value="translate(0px, -14px)" />
+        </Style>
+        <!-- Manos laterales: +X apunta al centro (la del Jugador 3 está girada 180°) -->
+        <Style Selector="Border.playerZone.active ItemsControl.sideHand > ContentPresenter:pointerover">
+            <Setter Property="RenderTransform" Value="translate(14px, 0px)" />
+        </Style>
+
         <!-- Tamaños de carta por zona -->
         <Style Selector="ItemsControl.bottomHand Border.card">
             <Setter Property="Width" Value="80" />
@@ -100,139 +158,430 @@
         <Style Selector="Canvas.directionArrow.counterClockwise">
             <Setter Property="RenderTransform" Value="scaleX(-1)" />
         </Style>
+
+        <!-- Botón para regresar al menú y botones de la alerta (base en Styles/PixelStyles.axaml) -->
+        <Style Selector="Button.backButton">
+            <Setter Property="Background" Value="#222222" />
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="Padding" Value="14,12" />
+            <Setter Property="BorderThickness" Value="4" />
+            <Setter Property="HorizontalAlignment" Value="Left" />
+            <Setter Property="VerticalAlignment" Value="Top" />
+            <Setter Property="Margin" Value="20,20,0,0" />
+            <Setter Property="Effect">
+                <DropShadowEffect OffsetX="4" OffsetY="4" BlurRadius="0" Color="Black" Opacity="1" />
+            </Setter>
+        </Style>
+        <Style Selector="Button.backButton:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="#444444" />
+        </Style>
+        <Style Selector="Button.dialogButton">
+            <Setter Property="FontSize" Value="14" />
+            <Setter Property="Padding" Value="20,18" />
+            <Setter Property="MinWidth" Value="260" />
+        </Style>
+        <Style Selector="Button.cancel">
+            <Setter Property="Background" Value="#0020FF" />
+        </Style>
+        <Style Selector="Button.cancel:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="#4060FF" />
+        </Style>
+        <Style Selector="Button.confirm">
+            <Setter Property="Background" Value="#FF0000" />
+        </Style>
+        <Style Selector="Button.confirm:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="#FF4040" />
+        </Style>
+
+        <!-- Selector de color: cuadrantes con el color de la carta, borde negro grueso y blanco al pasar el mouse -->
+        <Style Selector="Button.colorQuadrant">
+            <Setter Property="Width" Value="140" />
+            <Setter Property="Height" Value="140" />
+            <Setter Property="CornerRadius" Value="0" />
+            <Setter Property="BorderBrush" Value="Black" />
+            <Setter Property="BorderThickness" Value="5" />
+            <Setter Property="Foreground" Value="White" />
+            <Setter Property="FontSize" Value="14" />
+            <Setter Property="HorizontalContentAlignment" Value="Center" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="RenderTransform" Value="translate(0px, 0px)" />
+        </Style>
+        <!-- Fluent cambia el fondo al pasar el mouse; aquí se conserva el color de cada cuadrante -->
+        <Style Selector="Button.colorQuadrant:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="{TemplateBinding Background}" />
+            <Setter Property="BorderBrush" Value="White" />
+            <Setter Property="Foreground" Value="White" />
+        </Style>
+        <Style Selector="Button.colorQuadrant:pressed">
+            <Setter Property="RenderTransform" Value="translate(3px, 3px)" />
+        </Style>
+        <Style Selector="TextBlock.quadrantLabel">
+            <Setter Property="Effect">
+                <DropShadowEffect OffsetX="2" OffsetY="2" BlurRadius="0" Color="Black" Opacity="1" />
+            </Setter>
+        </Style>
+
+        <!-- Nombre del jugador con la etiqueta "¡UNO!" a un lado cuando ya lo cantó -->
+        <Style Selector="StackPanel.playerHeader">
+            <Setter Property="Orientation" Value="Horizontal" />
+            <Setter Property="HorizontalAlignment" Value="Center" />
+            <Setter Property="Spacing" Value="6" />
+            <Setter Property="Margin" Value="0,0,0,12" />
+        </Style>
+        <Style Selector="StackPanel.playerHeader TextBlock.playerName">
+            <Setter Property="Margin" Value="0" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+        </Style>
+        <Style Selector="Border.unoTag">
+            <Setter Property="Background" Value="#FF0000" />
+            <Setter Property="BorderBrush" Value="Black" />
+            <Setter Property="BorderThickness" Value="2" />
+            <Setter Property="Padding" Value="4,3" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+        </Style>
+        <Style Selector="Border.unoTag TextBlock">
+            <Setter Property="FontSize" Value="9" />
+            <Setter Property="Foreground" Value="White" />
+        </Style>
+
+        <!-- Botón ¡UNO!: rojo y pequeño a propósito, para que haya que apuntarle bien -->
+        <Style Selector="Button.unoButton">
+            <Setter Property="Background" Value="#FF0000" />
+            <Setter Property="Foreground" Value="White" />
+            <Setter Property="BorderBrush" Value="Black" />
+            <Setter Property="BorderThickness" Value="3" />
+            <Setter Property="CornerRadius" Value="0" />
+            <Setter Property="FontSize" Value="10" />
+            <Setter Property="Width" Value="70" />
+            <Setter Property="Height" Value="30" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="HorizontalContentAlignment" Value="Center" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="RenderTransform" Value="translate(0px, 0px)" />
+            <Setter Property="Effect">
+                <DropShadowEffect OffsetX="3" OffsetY="3" BlurRadius="0" Color="Black" Opacity="1" />
+            </Setter>
+        </Style>
+        <Style Selector="Button.unoButton:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="#FF4040" />
+            <Setter Property="BorderBrush" Value="White" />
+            <Setter Property="Foreground" Value="White" />
+        </Style>
+        <Style Selector="Button.unoButton:pressed">
+            <Setter Property="RenderTransform" Value="translate(2px, 2px)" />
+        </Style>
+        <!-- Pantalla de victoria: botones del mismo tamaño -->
+        <Style Selector="Button.victoryButton">
+            <Setter Property="FontSize" Value="14" />
+            <Setter Property="Padding" Value="20,18" />
+            <Setter Property="Width" Value="320" />
+        </Style>
     </UserControl.Styles>
 
-    <Grid RowDefinitions="Auto,*,Auto" ColumnDefinitions="240,*,240">
+    <Panel>
+        <Grid RowDefinitions="Auto,*,Auto" ColumnDefinitions="240,*,240">
 
-        <!-- Jugador 2 (Izquierda) -->
-        <Border Grid.Row="1" Grid.Column="0" Classes="playerZone">
-            <DockPanel>
-                <TextBlock DockPanel.Dock="Top" Classes="pixelText playerName" Text="{Binding Player2.Name}" />
-                <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
-                    <ItemsControl Classes="sideHand" ItemsSource="{Binding Player2.Hand}">
-                        <ItemsControl.ItemsPanel>
-                            <ItemsPanelTemplate>
-                                <StackPanel Orientation="Vertical" HorizontalAlignment="Center" Spacing="-30" />
-                            </ItemsPanelTemplate>
-                        </ItemsControl.ItemsPanel>
-                        <ItemsControl.ItemTemplate>
-                            <DataTemplate DataType="vm:CardViewModel">
-                                <LayoutTransformControl LayoutTransform="rotate(90deg)">
-                                    <ContentControl Content="{Binding}" />
-                                </LayoutTransformControl>
-                            </DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                    </ItemsControl>
-                </ScrollViewer>
-            </DockPanel>
-        </Border>
+            <!-- Regresar al menú (pide confirmación porque se pierde la partida) -->
+            <Button Grid.Row="0" Grid.Column="0"
+                    Classes="pixelButton backButton"
+                    Content="← MENU"
+                    Command="{Binding RequestExitCommand}" />
 
-        <!-- Jugador 3 (Derecha) -->
-        <Border Grid.Row="1" Grid.Column="2" Classes="playerZone">
-            <DockPanel>
-                <TextBlock DockPanel.Dock="Top" Classes="pixelText playerName" Text="{Binding Player3.Name}" />
-                <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
-                    <!-- Girado 180° con cartas a 90°: cada carta queda orientada hacia el Jugador 3
-                         y la franja visible es la parte superior, donde está el número -->
-                    <ItemsControl Classes="sideHand" ItemsSource="{Binding Player3.Hand}"
-                                  VerticalAlignment="Top"
-                                  RenderTransform="rotate(180deg)">
-                        <ItemsControl.ItemsPanel>
-                            <ItemsPanelTemplate>
-                                <StackPanel Orientation="Vertical" HorizontalAlignment="Center" Spacing="-30" />
-                            </ItemsPanelTemplate>
-                        </ItemsControl.ItemsPanel>
-                        <ItemsControl.ItemTemplate>
-                            <DataTemplate DataType="vm:CardViewModel">
-                                <LayoutTransformControl LayoutTransform="rotate(90deg)">
-                                    <ContentControl Content="{Binding}" />
-                                </LayoutTransformControl>
-                            </DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                    </ItemsControl>
-                </ScrollViewer>
-            </DockPanel>
-        </Border>
+            <!-- Jugador 2 (Izquierda) -->
+            <Border Grid.Row="1" Grid.Column="0" Classes="playerZone"
+                    Classes.active="{Binding Player2.IsActive}">
+                <DockPanel>
+                    <StackPanel DockPanel.Dock="Top" Classes="playerHeader">
+                        <TextBlock Classes="pixelText playerName" Text="{Binding Player2.Name}" />
+                        <Border Classes="unoTag" IsVisible="{Binding Player2.HasCalledUno}">
+                            <TextBlock Text="¡UNO!" />
+                        </Border>
+                    </StackPanel>
+                    <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+                        <ItemsControl Classes="sideHand" ItemsSource="{Binding Player2.Hand}"
+                                      IsEnabled="{Binding Player2.IsActive}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <StackPanel Orientation="Vertical" HorizontalAlignment="Center" Spacing="-30" />
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate DataType="vm:CardViewModel">
+                                    <LayoutTransformControl LayoutTransform="rotate(90deg)">
+                                        <ContentControl Content="{Binding}" />
+                                    </LayoutTransformControl>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </ScrollViewer>
+                </DockPanel>
+            </Border>
 
-        <!-- Indicadores: color activo y dirección del turno, arriba al centro -->
-        <StackPanel Grid.Row="0" Grid.Column="1"
-                    Orientation="Horizontal"
-                    HorizontalAlignment="Center"
-                    Margin="0,16,0,0"
-                    Spacing="48">
-            <StackPanel>
-                <Ellipse Width="40" Height="40"
-                         Fill="{Binding ActiveColorBrush}"
-                         Stroke="White"
-                         StrokeThickness="3"
-                         HorizontalAlignment="Center" />
-                <TextBlock Classes="zoneLabel" Text="Color activo" />
+            <!-- Jugador 3 (Derecha) -->
+            <Border Grid.Row="1" Grid.Column="2" Classes="playerZone"
+                    Classes.active="{Binding Player3.IsActive}">
+                <DockPanel>
+                    <StackPanel DockPanel.Dock="Top" Classes="playerHeader">
+                        <TextBlock Classes="pixelText playerName" Text="{Binding Player3.Name}" />
+                        <Border Classes="unoTag" IsVisible="{Binding Player3.HasCalledUno}">
+                            <TextBlock Text="¡UNO!" />
+                        </Border>
+                    </StackPanel>
+                    <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+                        <!-- Girado 180° con cartas a 90°: cada carta queda orientada hacia el Jugador 3
+                             y la franja visible es la parte superior, donde está el número -->
+                        <ItemsControl Classes="sideHand" ItemsSource="{Binding Player3.Hand}"
+                                      IsEnabled="{Binding Player3.IsActive}"
+                                      VerticalAlignment="Top"
+                                      RenderTransform="rotate(180deg)">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <StackPanel Orientation="Vertical" HorizontalAlignment="Center" Spacing="-30" />
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate DataType="vm:CardViewModel">
+                                    <LayoutTransformControl LayoutTransform="rotate(90deg)">
+                                        <ContentControl Content="{Binding}" />
+                                    </LayoutTransformControl>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </ScrollViewer>
+                </DockPanel>
+            </Border>
+
+            <!-- Indicadores: color activo y dirección del turno, arriba al centro -->
+            <StackPanel Grid.Row="0" Grid.Column="1"
+                        Orientation="Horizontal"
+                        HorizontalAlignment="Center"
+                        Margin="0,16,0,0"
+                        Spacing="48">
+                <StackPanel>
+                    <Ellipse Width="40" Height="40"
+                             Fill="{Binding ActiveColorBrush}"
+                             Stroke="White"
+                             StrokeThickness="3"
+                             HorizontalAlignment="Center" />
+                    <TextBlock Classes="zoneLabel" Text="Color activo" />
+                </StackPanel>
+
+                <StackPanel>
+                    <Viewbox Width="42" Height="42" HorizontalAlignment="Center">
+                        <Canvas Classes="directionArrow"
+                                Classes.counterClockwise="{Binding IsCounterClockwise}"
+                                Width="60" Height="60">
+                            <Path Data="M 30,6 A 24,24 0 1 1 6,30"
+                                  Stroke="White"
+                                  StrokeThickness="4"
+                                  StrokeLineCap="Round" />
+                            <Path Data="M 0,32 L 6,21 L 12,32 Z" Fill="White" />
+                        </Canvas>
+                    </Viewbox>
+                    <TextBlock Classes="zoneLabel" Text="{Binding DirectionText}" />
+                </StackPanel>
             </StackPanel>
 
-            <StackPanel>
-                <Viewbox Width="42" Height="42" HorizontalAlignment="Center">
-                    <Canvas Classes="directionArrow"
-                            Classes.counterClockwise="{Binding IsCounterClockwise}"
-                            Width="60" Height="60">
-                        <Path Data="M 30,6 A 24,24 0 1 1 6,30"
-                              Stroke="White"
-                              StrokeThickness="4"
-                              StrokeLineCap="Round" />
-                        <Path Data="M 0,32 L 6,21 L 12,32 Z" Fill="White" />
-                    </Canvas>
-                </Viewbox>
-                <TextBlock Classes="zoneLabel" Text="{Binding DirectionText}" />
-            </StackPanel>
-        </StackPanel>
+            <!-- Zona Central: pila de robo y pila de descarte -->
+            <Grid Grid.Row="1" Grid.Column="1"
+                  ColumnDefinitions="Auto,Auto"
+                  ColumnSpacing="36"
+                  HorizontalAlignment="Center"
+                  VerticalAlignment="Center">
 
-        <!-- Zona Central: pila de robo y pila de descarte -->
-        <Grid Grid.Row="1" Grid.Column="1"
-              ColumnDefinitions="Auto,Auto"
-              ColumnSpacing="36"
-              HorizontalAlignment="Center"
-              VerticalAlignment="Center">
+                <!-- Pila de robo -->
+                <StackPanel Grid.Column="0">
+                    <Button Classes="drawPile" ToolTip.Tip="Robar una carta">
+                        <Border Width="105" Height="165" CornerRadius="6" ClipToBounds="True">
+                            <Image Source="{Binding DrawPileImage}" Stretch="UniformToFill" />
+                        </Border>
+                    </Button>
+                    <TextBlock Classes="zoneLabel" Text="Robar" />
+                </StackPanel>
 
-            <!-- Pila de robo -->
-            <StackPanel Grid.Column="0">
-                <Button Classes="drawPile" ToolTip.Tip="Robar una carta">
-                    <Border Width="105" Height="165" CornerRadius="6" ClipToBounds="True">
-                        <Image Source="{Binding DrawPileImage}" Stretch="UniformToFill" />
-                    </Border>
-                </Button>
-                <TextBlock Classes="zoneLabel" Text="Robar" />
-            </StackPanel>
+                <!-- Pila de descarte -->
+                <StackPanel Grid.Column="1">
+                    <Panel Width="105" Height="165">
+                        <Rectangle Stroke="#99FFFFFF"
+                                   StrokeThickness="2"
+                                   StrokeDashArray="4,3"
+                                   RadiusX="6" RadiusY="6" />
+                        <Border CornerRadius="6" ClipToBounds="True" BoxShadow="0 4 12 0 #88000000">
+                            <Image Source="{Binding TopDiscardCard.Image}" Stretch="UniformToFill" />
+                        </Border>
+                    </Panel>
+                    <TextBlock Classes="zoneLabel" Text="Descarte" />
+                </StackPanel>
+            </Grid>
 
-            <!-- Pila de descarte -->
-            <StackPanel Grid.Column="1">
-                <Panel Width="105" Height="165">
-                    <Rectangle Stroke="#99FFFFFF"
-                               StrokeThickness="2"
-                               StrokeDashArray="4,3"
-                               RadiusX="6" RadiusY="6" />
-                    <Border CornerRadius="6" ClipToBounds="True" BoxShadow="0 4 12 0 #88000000">
-                        <Image Source="{Binding TopDiscard.Image}" Stretch="UniformToFill" />
-                    </Border>
-                </Panel>
-                <TextBlock Classes="zoneLabel" Text="Descarte" />
-            </StackPanel>
+            <!-- Botones ¡UNO!: uno por jugador, frente a sus cartas (hacia el centro de la mesa).
+                 Solo aparecen cuando ese jugador tiene 1 carta y todavía no ha cantado UNO.
+                 Los de los jugadores 2 y 3 quedan a la altura de su única carta. -->
+            <Button Grid.Row="1" Grid.Column="1"
+                    Classes="unoButton"
+                    HorizontalAlignment="Center" VerticalAlignment="Bottom"
+                    Margin="0,0,0,8"
+                    Content="¡UNO!"
+                    IsVisible="{Binding Player1.ShowUnoButton}"
+                    Command="{Binding CallUnoCommand}"
+                    CommandParameter="{Binding Player1}" />
+            <Button Grid.Row="1" Grid.Column="1"
+                    Classes="unoButton"
+                    HorizontalAlignment="Left" VerticalAlignment="Top"
+                    Margin="6,66,0,0"
+                    Content="¡UNO!"
+                    IsVisible="{Binding Player2.ShowUnoButton}"
+                    Command="{Binding CallUnoCommand}"
+                    CommandParameter="{Binding Player2}" />
+            <Button Grid.Row="1" Grid.Column="1"
+                    Classes="unoButton"
+                    HorizontalAlignment="Right" VerticalAlignment="Top"
+                    Margin="0,66,6,0"
+                    Content="¡UNO!"
+                    IsVisible="{Binding Player3.ShowUnoButton}"
+                    Command="{Binding CallUnoCommand}"
+                    CommandParameter="{Binding Player3}" />
+
+            <!-- Jugador 1 (Abajo) -->
+            <Border Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="3"
+                    Classes="playerZone"
+                    Classes.active="{Binding Player1.IsActive}"
+                    Height="220">
+                <DockPanel>
+                    <StackPanel DockPanel.Dock="Top" Classes="playerHeader">
+                        <TextBlock Classes="pixelText playerName" Text="{Binding Player1.Name}" />
+                        <Border Classes="unoTag" IsVisible="{Binding Player1.HasCalledUno}">
+                            <TextBlock Text="¡UNO!" />
+                        </Border>
+                    </StackPanel>
+                    <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
+                        <ItemsControl Classes="bottomHand" ItemsSource="{Binding Player1.Hand}"
+                                      IsEnabled="{Binding Player1.IsActive}"
+                                      Padding="0,16,0,0">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="8" />
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                        </ItemsControl>
+                    </ScrollViewer>
+                </DockPanel>
+            </Border>
         </Grid>
 
-        <!-- Jugador 1 (Abajo) -->
-        <Border Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="3"
-                Classes="playerZone"
-                Height="220">
-            <DockPanel>
-                <TextBlock DockPanel.Dock="Top" Classes="pixelText playerName" Text="{Binding Player1.Name}" />
-                <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
-                    <ItemsControl Classes="bottomHand" ItemsSource="{Binding Player1.Hand}">
-                        <ItemsControl.ItemsPanel>
-                            <ItemsPanelTemplate>
-                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="8" />
-                            </ItemsPanelTemplate>
-                        </ItemsControl.ItemsPanel>
-                    </ItemsControl>
-                </ScrollViewer>
-            </DockPanel>
-        </Border>
-    </Grid>
+        <!-- Selector de color para comodines: 4 cuadrantes en el mismo orden que el dibujo del comodín.
+             No tiene botón de cancelar porque el juego no puede seguir sin un color. -->
+        <Panel IsVisible="{Binding IsColorPickerOpen}" Background="#B3000000">
+            <Border Background="#3A2213"
+                    BorderBrush="Black"
+                    BorderThickness="6"
+                    Padding="40,32"
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Center"
+                    BoxShadow="10 10 0 0 #000000">
+                <StackPanel Spacing="28">
+                    <TextBlock Classes="pixelText" FontSize="18" Text="ELIGE UN COLOR">
+                        <TextBlock.Effect>
+                            <DropShadowEffect OffsetX="3" OffsetY="3" BlurRadius="0" Color="Black" Opacity="1" />
+                        </TextBlock.Effect>
+                    </TextBlock>
+                    <Grid ColumnDefinitions="Auto,Auto" RowDefinitions="Auto,Auto"
+                          HorizontalAlignment="Center">
+                        <Button Grid.Row="0" Grid.Column="0" Classes="colorQuadrant"
+                                Background="#FF0000"
+                                Command="{Binding ChooseColorCommand}"
+                                CommandParameter="{x:Static core:CardColor.Red}">
+                            <TextBlock Classes="quadrantLabel" Text="ROJO" />
+                        </Button>
+                        <Button Grid.Row="0" Grid.Column="1" Classes="colorQuadrant"
+                                Background="#0020FF"
+                                Command="{Binding ChooseColorCommand}"
+                                CommandParameter="{x:Static core:CardColor.Blue}">
+                            <TextBlock Classes="quadrantLabel" Text="AZUL" />
+                        </Button>
+                        <Button Grid.Row="1" Grid.Column="0" Classes="colorQuadrant"
+                                Background="#E6B400"
+                                Command="{Binding ChooseColorCommand}"
+                                CommandParameter="{x:Static core:CardColor.Yellow}">
+                            <TextBlock Classes="quadrantLabel" Text="AMARILLO" />
+                        </Button>
+                        <Button Grid.Row="1" Grid.Column="1" Classes="colorQuadrant"
+                                Background="#40FF00"
+                                Command="{Binding ChooseColorCommand}"
+                                CommandParameter="{x:Static core:CardColor.Green}">
+                            <TextBlock Classes="quadrantLabel" Text="VERDE" />
+                        </Button>
+                    </Grid>
+                </StackPanel>
+            </Border>
+        </Panel>
+
+        <!-- Alerta para salir: capa oscura sobre todo el tablero (bloquea los clics) con el aviso al centro -->
+        <Panel IsVisible="{Binding IsExitDialogOpen}" Background="#B3000000">
+            <Border Background="#3A2213"
+                    BorderBrush="Black"
+                    BorderThickness="6"
+                    Padding="48,40"
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Center"
+                    BoxShadow="10 10 0 0 #000000">
+                <StackPanel Spacing="40">
+                    <TextBlock Classes="pixelText"
+                               FontSize="18"
+                               LineHeight="34"
+                               TextAlignment="Center">
+                        <TextBlock.Effect>
+                            <DropShadowEffect OffsetX="3" OffsetY="3" BlurRadius="0" Color="Black" Opacity="1" />
+                        </TextBlock.Effect>
+                        <Run Text="¡¿Estás seguro que quieres salir," />
+                        <LineBreak />
+                        <Run Text="estás en pleno juego?!" />
+                    </TextBlock>
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="32">
+                        <Button Classes="pixelButton dialogButton cancel"
+                                Content="Cancelar"
+                                Command="{Binding CancelExitCommand}" />
+                        <Button Classes="pixelButton dialogButton confirm"
+                                Content="Sí, estoy seguro"
+                                Command="{Binding ConfirmExitCommand}" />
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+        </Panel>
+        <!-- Pantalla de victoria: con el nombre del ganador y dos opciones -->
+        <Panel IsVisible="{Binding IsVictoryScreenOpen}" Background="#CC000000">
+            <Border Background="#3A2213"
+                    BorderBrush="Black"
+                    BorderThickness="6"
+                    Padding="64,48"
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Center"
+                    BoxShadow="10 10 0 0 #000000">
+                <StackPanel Spacing="20">
+                    <controls:OutlinedText Text="¡¡GANASTE!!"
+                                           FontSize="50"
+                                           Fill="#E6B400"
+                                           Stroke="White"
+                                           StrokeThickness="1"
+                                           ShadowOffset="5"
+                                           HorizontalAlignment="Center" />
+                    <TextBlock Classes="pixelText" FontSize="22" Text="{Binding WinnerName}">
+                        <TextBlock.Effect>
+                            <DropShadowEffect OffsetX="3" OffsetY="3" BlurRadius="0" Color="Black" Opacity="1" />
+                        </TextBlock.Effect>
+                    </TextBlock>
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="32" Margin="0,28,0,0">
+                        <Button Classes="pixelButton victoryButton cancel"
+                                Content="Regresar al menú"
+                                Command="{Binding BackToMenuCommand}" />
+                        <Button Classes="pixelButton victoryButton confirm"
+                                Content="Volver a jugar"
+                                Command="{Binding PlayAgainCommand}" />
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+        </Panel>
+    </Panel>
 </UserControl>
