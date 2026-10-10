@@ -124,6 +124,8 @@ class PlayerStatsResponse(BaseModel):
     matches_won: int
     matches_lost: int
     win_rate: float
+    average_duration_minutes: float
+    total_score: int
 
 
 # ==========================================
@@ -242,6 +244,11 @@ def get_leaderboard_stats():
     conn = get_db_connection()
     cursor = conn.cursor()
 
+    # Calcular duración promedio global de partidas finalizadas
+    cursor.execute('SELECT AVG(JULIANDAY("EndedAt") - JULIANDAY("StartedAt")) * 1440 FROM "Matches" WHERE "EndedAt" IS NOT NULL')
+    avg_duration_res = cursor.fetchone()[0]
+    avg_duration = round(avg_duration_res, 2) if avg_duration_res else 0.0
+
     query = '''
             SELECT
                 p."Id" AS player_id,
@@ -270,7 +277,9 @@ def get_leaderboard_stats():
             matches_played=played,
             matches_won=won,
             matches_lost=lost,
-            win_rate=round(rate, 2)
+            win_rate=round(rate, 2),
+            average_duration_minutes=avg_duration,
+            total_score=won * 100 # Puntuación estimada o acumulada
         ))
 
     return results
