@@ -2,6 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
+using System.Threading.Tasks;
+using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using TheUno.Core.Contracts;
 
@@ -25,22 +27,33 @@ public record LeaderboardRow(
 /// <summary>
 /// Historial y estadísticas: tabla de clasificación con partidas jugadas, victorias,
 /// derrotas, porcentaje de victorias, duración promedio y puntos de cada jugador.
-/// Mientras no esté conectada la base de datos, se llena con datos de ejemplo.
+/// Los datos se piden a la API; en el diseñador de Rider se usan datos de ejemplo.
 /// </summary>
 public partial class StatsViewModel : ViewModelBase
 {
     private readonly Action _goToMenu;
+    private readonly IMatchRepository? _matchRepository;
 
-    public StatsViewModel(Action goToMenu)
+    /// <summary>Aviso en lugar de la tabla: cargando, sin conexión o sin partidas.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasStatusMessage))]
+    private string _statusMessage = string.Empty;
+
+    public StatsViewModel(Action goToMenu, IMatchRepository matchRepository)
     {
         _goToMenu = goToMenu;
-        LoadStats(CreateSampleStats());
+        _matchRepository = matchRepository;
+        _ = LoadFromRepositoryAsync();
     }
 
     /// <summary>Constructor para el diseñador de Rider/Avalonia.</summary>
-    public StatsViewModel() : this(() => { })
+    public StatsViewModel()
     {
+        _goToMenu = () => { };
+        LoadStats(CreateSampleStats());
     }
+
+    public bool HasStatusMessage => StatusMessage.Length > 0;
 
     public ObservableCollection<LeaderboardRow> Rows { get; } = new();
 
@@ -72,13 +85,29 @@ public partial class StatsViewModel : ViewModelBase
         }
     }
 
+    private async Task LoadFromRepositoryAsync()
+    {
+        if (_matchRepository is null) return;
+
+        StatusMessage = "Cargando...";
+        try
+        {
+            LoadStats(await _matchRepository.GetLeaderboardStatsAsync());
+            StatusMessage = string.Empty;
+        }
+        catch (Exception)
+        {
+            StatusMessage = "No se pudo conectar con la API";
+        }
+    }
+
     [RelayCommand]
     private void BackToMenu() => _goToMenu();
 
     private static double GetWinRate(PlayerStatsDto stats) =>
         stats.MatchesPlayed == 0 ? 0 : stats.MatchesWon * 100.0 / stats.MatchesPlayed;
 
-    // ---------- Datos de ejemplo (se quitan cuando se conecte la base de datos) ----------
+    // ---------- Datos de ejemplo (solo para el diseñador) ----------
 
     // Mismos jugadores que la semilla de la base de datos; 12 partidas en total.
     // Datos: jugadas, ganadas, perdidas, duración promedio (minutos) y puntos.

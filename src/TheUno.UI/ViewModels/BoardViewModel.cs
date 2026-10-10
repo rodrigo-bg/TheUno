@@ -17,8 +17,6 @@ namespace TheUno.UI.ViewModels;
 /// </summary>
 public partial class BoardViewModel : ViewModelBase
 {
-    private static readonly string[] PlayerNames = { "Jugador 1", "Jugador 2", "Jugador 3" };
-
     // Tiempo para cantar UNO después de tirar la penúltima carta
     private static readonly TimeSpan UnoWindow = TimeSpan.FromSeconds(2);
 
@@ -114,14 +112,14 @@ public partial class BoardViewModel : ViewModelBase
     [ObservableProperty]
     private int _winnerScore;
 
+    /// <summary>
+    /// Recibe el motor ya iniciado (con las cartas repartidas y la primera carta volteada).
+    /// </summary>
     public BoardViewModel(IGameEngine engine, Action goToMenu, Action startNewGame)
     {
         _engine = engine;
         _goToMenu = goToMenu;
         _startNewGame = startNewGame;
-
-        // El motor reparte 7 cartas a cada jugador y voltea la primera carta del descarte.
-        _engine.StartGame(PlayerNames);
 
         Player1 = new PlayerViewModel(_engine.Players[0]);
         Player2 = new PlayerViewModel(_engine.Players[1]);
@@ -136,7 +134,7 @@ public partial class BoardViewModel : ViewModelBase
         _activePlayer.IsActive = true;
         UpdatePlayableCards();
 
-        // Se escucha después de StartGame porque los PlayerViewModel aún no existían.
+        // Se escucha al final porque los PlayerViewModel tienen que existir antes.
         _engine.OnTurnChanged += OnTurnChanged;
         _engine.OnCardPlayed += OnCardPlayed;
         _engine.OnCardDrawn += OnCardDrawn;
@@ -145,8 +143,15 @@ public partial class BoardViewModel : ViewModelBase
     }
 
     /// <summary>Constructor para el diseñador de Rider/Avalonia.</summary>
-    public BoardViewModel() : this(new GameEngine(), () => { }, () => { })
+    public BoardViewModel() : this(CreateDesignEngine(), () => { }, () => { })
     {
+    }
+
+    private static IGameEngine CreateDesignEngine()
+    {
+        var engine = new GameEngine();
+        engine.StartGame(new[] { "Jugador 1", "Jugador 2", "Jugador 3" });
+        return engine;
     }
 
     public PlayerViewModel Player1 { get; }
