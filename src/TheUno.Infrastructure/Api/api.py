@@ -84,6 +84,18 @@ def init_db():
                        );
                    ''')
 
+    # Semilla: los 3 integrantes del equipo, con los mismos Ids que la semilla de EF Core
+    seed_players = [
+        ("11111111-1111-1111-1111-111111111111", "Rodri"),
+        ("22222222-2222-2222-2222-222222222222", "Tona"),
+        ("33333333-3333-3333-3333-333333333333", "Alejandro"),
+    ]
+    for player_id, name in seed_players:
+        cursor.execute(
+            'INSERT OR IGNORE INTO "Players" ("Id", "Name", "CreatedAt") VALUES (?, ?, ?)',
+            (player_id, name, "2026-01-01T00:00:00")
+        )
+
     conn.commit()
     conn.close()
 
@@ -116,6 +128,22 @@ class LogEntryRequest(BaseModel):
     card_details: Optional[str] = ""
     chosen_color: Optional[str] = None
     timestamp: Optional[str] = None
+
+class MatchSummaryResponse(BaseModel):
+    match_id: str
+    started_at: str
+    winner_name: str
+    duration_minutes: float
+    total_turns: int
+
+class LogEntryResponse(BaseModel):
+    match_id: str
+    turn_number: int
+    player_id: str
+    action: str
+    card_details: Optional[str] = ""
+    chosen_color: Optional[str] = None
+    timestamp: str
 
 class PlayerStatsResponse(BaseModel):
     player_id: str
@@ -253,7 +281,7 @@ def get_leaderboard_stats():
             SELECT
                 p."Id" AS player_id,
                 p."Name" AS name,
-                COUNT(mp."MatchId") AS matches_played,
+                COUNT(m."Id") AS matches_played,
                 SUM(CASE WHEN m."WinnerId" = p."Id" THEN 1 ELSE 0 END) AS matches_won
             FROM "Players" p
                      LEFT JOIN "MatchPlayers" mp ON p."Id" = mp."PlayerId"
@@ -283,3 +311,74 @@ def get_leaderboard_stats():
         ))
 
     return results
+
+
+def duration_to_minutes(duration: str) -> float:
+    """
+    Convierte la duración guardada como "hh:mm:ss" a minutos.
+    """
+    try:
+        hours, minutes, seconds = (float(part) for part in duration.split(":"))
+        return round(hours * 60 + minutes + seconds / 60, 2)
+    except (ValueError, AttributeError):
+        return 0.0
+
+
+@app.get("/matches", response_model=List[MatchSummaryResponse])
+def get_completed_matches():
+    """
+    Lista las partidas terminadas, de la más reciente a la más antigua, con su ganador.
+    """
+    conn = get_db_connection()
+    rows = conn.execute(
+        '''
+        SELECT m."Id", m."StartedAt", m."Duration", m."TotalTurns", p."Name" AS winner_name
+        FROM "Matches" m
+                 LEFT JOIN "Players" p ON m."WinnerId" = p."Id"
+        WHERE m."EndedAt" IS NOT NULL
+        ORDER BY m."StartedAt" DESC
+        '''
+    ).fetchall()
+    conn.close()
+
+    return [
+        MatchSummaryResponse(
+            match_id=row["Id"],
+            started_at=row["StartedAt"],
+            winner_name=row["winner_name"] or "Sin ganador",
+            duration_minutes=duration_to_minutes(row["Duration"]),
+            total_turns=row["TotalTurns"]
+        )
+        for row in rows
+    ]
+
+
+@app.get("/matches/{match_id}/logs", response_model=List[LogEntryResponse])
+def get_match_logs(match_id: str):
+    """
+    Devuelve la traza completa de movimientos de una partida, en el orden en que ocurrieron.
+    """
+    conn = get_db_connection()
+    rows = conn.execute(
+        '''
+        SELECT "MatchId", "TurnNumber", "PlayerId", "Action", "CardDetails", "ChosenColor", "Timestamp"
+        FROM "GameLogs"
+        WHERE "MatchId" = ?
+        ORDER BY "TurnNumber", "Timestamp", "Id"
+        ''',
+        (match_id,)
+    ).fetchall()
+    conn.close()
+
+    return [
+        LogEntryResponse(
+            match_id=row["MatchId"],
+            turn_number=row["TurnNumber"],
+            player_id=row["PlayerId"],
+            action=row["Action"],
+            card_details=row["CardDetails"],
+            chosen_color=row["ChosenColor"],
+            timestamp=row["Timestamp"]
+        )
+        for row in rows
+    ]

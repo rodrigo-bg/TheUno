@@ -27,3 +27,11 @@ ehthumbs.db
 packages/
 !packages/build/
 
+
+# Archivos generados: herramientas, Python y bases de datos locales
+.aider*
+__pycache__/
+*.pyc
+*.db
+*.db-shm
+*.db-wal

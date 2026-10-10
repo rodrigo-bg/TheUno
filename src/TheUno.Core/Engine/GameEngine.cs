@@ -93,7 +93,7 @@ public class GameEngine : IGameEngine
     }
 
 
-// Configura la partida inicial
+// Configura la partida inicial con jugadores nuevos (sin registro en la base de datos)
     public void StartGame(IEnumerable<string> playerNames)
     {
         if (playerNames == null)
@@ -101,10 +101,30 @@ public class GameEngine : IGameEngine
             throw new ArgumentNullException(nameof(playerNames));
         }
 
-        _players.Clear();
+        List<Player> players = new List<Player>();
         foreach (string name in playerNames)
         {
-            _players.Add(new Player(name));
+            players.Add(new Player(name));
+        }
+
+        StartGame(players, Guid.NewGuid());
+    }
+
+    // Configura la partida inicial con jugadores ya registrados (sus Ids de la base de datos)
+    // y el Id de la partida creada en el repositorio, para que la auditoría quede ligada a ellos
+    public void StartGame(IEnumerable<Player> players, Guid matchId)
+    {
+        if (players == null)
+        {
+            throw new ArgumentNullException(nameof(players));
+        }
+
+        _players.Clear();
+        foreach (Player player in players)
+        {
+            player.Hand.Clear();
+            player.HasDeclaredUno = false;
+            _players.Add(player);
         }
 
         if (_players.Count != 3)
@@ -121,7 +141,7 @@ public class GameEngine : IGameEngine
         _drawnCardThisTurn = null;
         _lastActingPlayer = null;
         _gameStartTime = DateTime.UtcNow;
-        _matchId = Guid.NewGuid();
+        _matchId = matchId;
         
         for (int p = 0; p < _players.Count; p++)
         {
