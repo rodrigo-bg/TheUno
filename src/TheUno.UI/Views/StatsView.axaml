@@ -41,7 +41,7 @@
 
         <!-- Tabla: encabezados amarillos, renglones blancos y el primer lugar en amarillo -->
         <Style Selector="TextBlock.header">
-            <Setter Property="FontSize" Value="13" />
+            <Setter Property="FontSize" Value="11" />
             <Setter Property="Foreground" Value="#E6B400" />
             <Setter Property="HorizontalAlignment" Value="Center" />
         </Style>
@@ -91,30 +91,34 @@
             <Border Background="#3A2213"
                     BorderBrush="Black"
                     BorderThickness="6"
-                    Padding="32,24"
+                    Padding="24"
                     BoxShadow="10 10 0 0 #000000">
                 <StackPanel>
                     <!-- Encabezados: mismas columnas que los renglones -->
-                    <Grid ColumnDefinitions="40,200,140,140,140,160" Margin="0,0,0,14">
+                    <Grid ColumnDefinitions="36,160,110,110,110,125,110,95" Margin="0,0,0,14">
                         <TextBlock Grid.Column="0" Classes="header" Text="#" />
                         <TextBlock Grid.Column="1" Classes="header" Text="JUGADOR" HorizontalAlignment="Left" />
                         <TextBlock Grid.Column="2" Classes="header" Text="PARTIDAS" />
                         <TextBlock Grid.Column="3" Classes="header" Text="VICTORIAS" />
                         <TextBlock Grid.Column="4" Classes="header" Text="DERROTAS" />
                         <TextBlock Grid.Column="5" Classes="header" Text="% VICTORIAS" />
+                        <TextBlock Grid.Column="6" Classes="header" Text="PROM. MIN" />
+                        <TextBlock Grid.Column="7" Classes="header" Text="PUNTOS" />
                     </Grid>
 
                     <ItemsControl ItemsSource="{Binding Rows}">
                         <ItemsControl.ItemTemplate>
                             <DataTemplate DataType="vm:LeaderboardRow">
                                 <Border Classes="row" Classes.first="{Binding IsFirst}">
-                                    <Grid ColumnDefinitions="40,200,140,140,140,160">
+                                    <Grid ColumnDefinitions="36,160,110,110,110,125,110,95">
                                         <TextBlock Grid.Column="0" Classes="cell" Text="{Binding Position}" />
                                         <TextBlock Grid.Column="1" Classes="cell name" Text="{Binding Name}" />
                                         <TextBlock Grid.Column="2" Classes="cell" Text="{Binding MatchesPlayed}" />
                                         <TextBlock Grid.Column="3" Classes="cell" Text="{Binding MatchesWon}" />
                                         <TextBlock Grid.Column="4" Classes="cell" Text="{Binding MatchesLost}" />
                                         <TextBlock Grid.Column="5" Classes="cell" Text="{Binding WinRateText}" />
+                                        <TextBlock Grid.Column="6" Classes="cell" Text="{Binding AverageDurationText}" />
+                                        <TextBlock Grid.Column="7" Classes="cell" Text="{Binding TotalScore}" />
                                     </Grid>
                                 </Border>
                             </DataTemplate>

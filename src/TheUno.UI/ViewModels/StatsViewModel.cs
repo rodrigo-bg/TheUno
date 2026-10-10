@@ -14,7 +14,9 @@ public record LeaderboardRow(
     int MatchesPlayed,
     int MatchesWon,
     int MatchesLost,
-    string WinRateText)
+    string WinRateText,
+    string AverageDurationText,
+    int TotalScore)
 {
     /// <summary>El primer lugar se resalta en amarillo.</summary>
     public bool IsFirst => Position == 1;
@@ -22,7 +24,7 @@ public record LeaderboardRow(
 
 /// <summary>
 /// Historial y estadísticas: tabla de clasificación con partidas jugadas, victorias,
-/// derrotas y porcentaje de victorias de cada jugador.
+/// derrotas, porcentaje de victorias, duración promedio y puntos de cada jugador.
 /// Mientras no esté conectada la base de datos, se llena con datos de ejemplo.
 /// </summary>
 public partial class StatsViewModel : ViewModelBase
@@ -64,7 +66,9 @@ public partial class StatsViewModel : ViewModelBase
                 s.MatchesPlayed,
                 s.MatchesWon,
                 s.MatchesLost,
-                $"{GetWinRate(s):0}%"));
+                $"{GetWinRate(s):0}%",
+                $"{s.AverageDurationMinutes:0.0}",
+                s.TotalScore));
         }
     }
 
@@ -77,10 +81,11 @@ public partial class StatsViewModel : ViewModelBase
     // ---------- Datos de ejemplo (se quitan cuando se conecte la base de datos) ----------
 
     // Mismos jugadores que la semilla de la base de datos; 12 partidas en total.
+    // Datos: jugadas, ganadas, perdidas, duración promedio (minutos) y puntos.
     private static IEnumerable<PlayerStatsDto> CreateSampleStats() => new[]
     {
-        new PlayerStatsDto(Guid.Parse("11111111-1111-1111-1111-111111111111"), "Rodri", 12, 4, 8),
-        new PlayerStatsDto(Guid.Parse("22222222-2222-2222-2222-222222222222"), "Tona", 12, 5, 7),
-        new PlayerStatsDto(Guid.Parse("33333333-3333-3333-3333-333333333333"), "Alejandro", 12, 3, 9)
+        new PlayerStatsDto(Guid.Parse("11111111-1111-1111-1111-111111111111"), "Rodri", 12, 4, 8, 6.4, 325),
+        new PlayerStatsDto(Guid.Parse("22222222-2222-2222-2222-222222222222"), "Tona", 12, 5, 7, 6.4, 410),
+        new PlayerStatsDto(Guid.Parse("33333333-3333-3333-3333-333333333333"), "Alejandro", 12, 3, 9, 6.4, 240)
     };
 }
