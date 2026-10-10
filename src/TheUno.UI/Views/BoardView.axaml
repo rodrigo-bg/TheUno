@@ -674,15 +674,10 @@
                             <DropShadowEffect OffsetX="3" OffsetY="3" BlurRadius="0" Color="Black" Opacity="1" />
                         </TextBlock.Effect>
                     </TextBlock>
-                    <!-- Datos de la partida que entrega el motor al terminar -->
-                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="48" Margin="0,8,0,0">
-                        <TextBlock Classes="pixelText" FontSize="14">
-                            <Run Text="DURACIÓN " /><Run Foreground="#E6B400" Text="{Binding GameDurationText}" />
-                        </TextBlock>
-                        <TextBlock Classes="pixelText" FontSize="14">
-                            <Run Text="PUNTOS " /><Run Foreground="#E6B400" Text="{Binding WinnerScore}" />
-                        </TextBlock>
-                    </StackPanel>
+                    <!-- Duración de la partida que entrega el motor al terminar -->
+                    <TextBlock Classes="pixelText" FontSize="14" HorizontalAlignment="Center" Margin="0,8,0,0">
+                        <Run Text="DURACIÓN " /><Run Foreground="#E6B400" Text="{Binding GameDurationText}" />
+                    </TextBlock>
                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="32" Margin="0,28,0,0">
                         <Button Classes="pixelButton victoryButton cancel"
                                 Content="Regresar al menú"

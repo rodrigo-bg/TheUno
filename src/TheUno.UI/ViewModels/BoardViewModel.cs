@@ -117,10 +117,6 @@ public partial class BoardViewModel : ViewModelBase
     [ObservableProperty]
     private string _gameDurationText = string.Empty;
 
-    /// <summary>Puntos del ganador: la suma de las cartas que les quedaron a los demás.</summary>
-    [ObservableProperty]
-    private int _winnerScore;
-
     /// <summary>
     /// Recibe el motor ya iniciado (con las cartas repartidas y la primera carta volteada).
     /// </summary>
@@ -439,11 +435,10 @@ public partial class BoardViewModel : ViewModelBase
 
     // ---------- Victoria ----------
 
-    /// <summary>El motor avisa que alguien se quedó sin cartas, con la duración y sus puntos.</summary>
+    /// <summary>El motor avisa que alguien se quedó sin cartas, con la duración de la partida.</summary>
     private void OnGameOver(GameOverEventArgs e)
     {
         GameDurationText = $"{(int)e.Duration.TotalMinutes}:{e.Duration.Seconds:00}";
-        WinnerScore = e.WinnerScore;
         ShowVictory(GetPlayerViewModel(e.Winner));
     }
 
