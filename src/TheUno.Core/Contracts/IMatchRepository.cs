@@ -1,6 +1,14 @@
 namespace TheUno.Core.Contracts;
 
-public record PlayerStatsDto(Guid PlayerId, string Name, int MatchesPlayed, int MatchesWon, int MatchesLost);
+public record PlayerStatsDto(
+    Guid PlayerId,
+    string Name,
+    int MatchesPlayed,
+    int MatchesWon,
+    int MatchesLost,
+    double AverageDurationMinutes,
+    int TotalScore
+);
 
 public interface IMatchRepository
 {

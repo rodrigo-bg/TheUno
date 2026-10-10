@@ -57,16 +57,24 @@ public class MatchRepository : IMatchRepository
     /// Genera las estadísticas para la tabla de clasificación (Leaderboard) mediante consultas LINQ.
     public async Task<List<PlayerStatsDto>> GetLeaderboardStatsAsync()
     {
-        // Total de partidas que han finalizado
-        var totalCompletedMatches = await _context.Matches.CountAsync(m => m.EndedAt != null);
+        var completedMatches = await _context.Matches
+            .Where(m => m.EndedAt != null)
+            .ToListAsync();
+
+        var totalCompletedMatches = completedMatches.Count;
+        double avgDurationMinutes = totalCompletedMatches > 0 
+            ? completedMatches.Average(m => m.Duration.TotalMinutes) 
+            : 0.0;
 
         var stats = await _context.Players
             .Select(p => new PlayerStatsDto(
                 p.Id,
                 p.Name,
-                totalCompletedMatches,                                // MatchesPlayed
-                p.WonMatches.Count(m => m.EndedAt != null),           // MatchesWon
-                totalCompletedMatches - p.WonMatches.Count(m => m.EndedAt != null) // MatchesLost
+                totalCompletedMatches,
+                p.WonMatches.Count(m => m.EndedAt != null),
+                totalCompletedMatches - p.WonMatches.Count(m => m.EndedAt != null),
+                Math.Round(avgDurationMinutes, 2),
+                p.GameLogs.Where(g => g.Action == GameActionType.GameOver).Sum(g => 0) // Se puede enriquecer o sumar puntos de victoria si se registran en CardDetails
             ))
             .ToListAsync();
 
