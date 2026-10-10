@@ -30,6 +30,15 @@ public partial class BoardViewModel : ViewModelBase
     private readonly Action _goToMenu;
     private readonly Action _startNewGame;
 
+    // Avisa que un jugador cantó UNO, con el número de turno, para guardarlo en el log
+    private readonly Action<Player, int>? _onUnoCalled;
+
+    // Número de turno igual al que usa el motor en su log: empieza en 1 y sube en cada cambio de turno
+    private int _turnNumber;
+
+    // Turno en que el jugador de la ventana de UNO tiró su penúltima carta
+    private int _unoTurnNumber;
+
     // Qué hacer con el color elegido (tirar el comodín con ese color).
     private Action<CardColor>? _onColorChosen;
 
@@ -115,11 +124,16 @@ public partial class BoardViewModel : ViewModelBase
     /// <summary>
     /// Recibe el motor ya iniciado (con las cartas repartidas y la primera carta volteada).
     /// </summary>
-    public BoardViewModel(IGameEngine engine, Action goToMenu, Action startNewGame)
+    public BoardViewModel(IGameEngine engine, Action goToMenu, Action startNewGame,
+        Action<Player, int>? onUnoCalled = null)
     {
         _engine = engine;
         _goToMenu = goToMenu;
         _startNewGame = startNewGame;
+        _onUnoCalled = onUnoCalled;
+
+        // Si la primera carta es Salto o +2, el motor ya avanzó un turno al iniciar
+        _turnNumber = _engine.TopCard.Type is CardType.Skip or CardType.DrawTwo ? 2 : 1;
 
         Player1 = new PlayerViewModel(_engine.Players[0]);
         Player2 = new PlayerViewModel(_engine.Players[1]);
@@ -188,6 +202,8 @@ public partial class BoardViewModel : ViewModelBase
     /// </summary>
     private void OnTurnChanged(TurnChangedEventArgs e)
     {
+        _turnNumber++;
+
         if (_unoPlayer is not null)
         {
             _pendingTurnChange = e;
@@ -269,7 +285,12 @@ public partial class BoardViewModel : ViewModelBase
         ActiveColor = e.ActiveColor;
         UpdatePlayableCards();
 
-        if (e.Player.Hand.Count == 1 && !e.Player.HasDeclaredUno) OpenUnoWindow(player);
+        if (e.Player.Hand.Count == 1 && !e.Player.HasDeclaredUno)
+        {
+            // El cambio de turno todavía no llega: este es el turno en que tiró la carta
+            _unoTurnNumber = _turnNumber;
+            OpenUnoWindow(player);
+        }
     }
 
     // ---------- Robar y pasar ----------
@@ -378,6 +399,9 @@ public partial class BoardViewModel : ViewModelBase
         // CallUno() del motor (solo marca al jugador en turno). Se marca directo al jugador
         // del Core: el motor revisa esta propiedad antes de castigar con +2.
         player.Model.HasDeclaredUno = true;
+
+        // Por lo mismo, el motor no registra el UNO en el log: se avisa para guardarlo aparte
+        _onUnoCalled?.Invoke(player.Model, _unoTurnNumber);
 
         if (player == _unoPlayer) CloseUnoWindow();
     }

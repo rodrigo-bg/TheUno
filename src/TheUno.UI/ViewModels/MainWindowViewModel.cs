@@ -75,13 +75,32 @@ public partial class MainWindowViewModel : ViewModelBase
         var engine = new GameEngine(matchId is null ? null : _logRepository);
         engine.StartGame(players, matchId ?? Guid.NewGuid());
 
+        Action<Player, int>? onUnoCalled = null;
         if (matchId is { } savedMatchId)
         {
             engine.OnGameOver += e => _ = TryCompleteMatchAsync(savedMatchId, e);
+            onUnoCalled = (player, turn) => _ = TryLogUnoAsync(savedMatchId, player, turn);
         }
 
         // Cada partida usa un motor nuevo; el tablero lo recibe ya iniciado.
-        CurrentView = new BoardViewModel(engine, ShowMenu, StartGame);
+        CurrentView = new BoardViewModel(engine, ShowMenu, StartGame, onUnoCalled);
+    }
+
+    /// <summary>
+    /// Guarda en el log que un jugador cantó UNO, con el mismo formato que usa el motor.
+    /// (El motor solo lo registra con su CallUno(), que la interfaz no usa por la ventana de 2 segundos.)
+    /// </summary>
+    private async Task TryLogUnoAsync(Guid matchId, Player player, int turnNumber)
+    {
+        try
+        {
+            await _logRepository.LogActionAsync(new GameLogEntryDto(
+                matchId, turnNumber, player.Id, GameActionType.CallUno, "Declaro UNO", null, DateTime.UtcNow));
+        }
+        catch (Exception)
+        {
+            // Si la API se cerró durante la partida, este movimiento no se guarda
+        }
     }
 
     private async Task<Guid?> TryCreateMatchAsync(IEnumerable<Player> players)
@@ -112,7 +131,7 @@ public partial class MainWindowViewModel : ViewModelBase
 
     private void ShowHistory()
     {
-        CurrentView = new StatsViewModel(ShowMenu, _matchRepository);
+        CurrentView = new StatsViewModel(ShowMenu, _matchRepository, _logRepository);
     }
 
     // Al regresar se crea un menú nuevo; la partida o el historial anterior se descartan.
