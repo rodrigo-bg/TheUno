@@ -23,6 +23,7 @@ public interface IGameEngine
 
     // Métodos que invocará la UI
     void StartGame(IEnumerable<string> playerNames);
+    void StartGame(IEnumerable<Player> players, Guid matchId); // Jugadores registrados y partida ya creada en el repositorio
     bool CanPlayCard(Card card);
     void PlayCard(Card card, CardColor? chosenColor = null);
     void DrawCard();

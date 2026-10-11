@@ -17,8 +17,6 @@ namespace TheUno.UI.ViewModels;
 /// </summary>
 public partial class BoardViewModel : ViewModelBase
 {
-    private static readonly string[] PlayerNames = { "Jugador 1", "Jugador 2", "Jugador 3" };
-
     // Tiempo para cantar UNO después de tirar la penúltima carta
     private static readonly TimeSpan UnoWindow = TimeSpan.FromSeconds(2);
 
@@ -31,6 +29,15 @@ public partial class BoardViewModel : ViewModelBase
     // Navegación: las pone MainWindowViewModel
     private readonly Action _goToMenu;
     private readonly Action _startNewGame;
+
+    // Avisa que un jugador cantó UNO, con el número de turno, para guardarlo en el log
+    private readonly Action<Player, int>? _onUnoCalled;
+
+    // Número de turno igual al que usa el motor en su log: empieza en 1 y sube en cada cambio de turno
+    private int _turnNumber;
+
+    // Turno en que el jugador de la ventana de UNO tiró su penúltima carta
+    private int _unoTurnNumber;
 
     // Qué hacer con el color elegido (tirar el comodín con ese color).
     private Action<CardColor>? _onColorChosen;
@@ -110,18 +117,19 @@ public partial class BoardViewModel : ViewModelBase
     [ObservableProperty]
     private string _gameDurationText = string.Empty;
 
-    /// <summary>Puntos del ganador: la suma de las cartas que les quedaron a los demás.</summary>
-    [ObservableProperty]
-    private int _winnerScore;
-
-    public BoardViewModel(IGameEngine engine, Action goToMenu, Action startNewGame)
+    /// <summary>
+    /// Recibe el motor ya iniciado (con las cartas repartidas y la primera carta volteada).
+    /// </summary>
+    public BoardViewModel(IGameEngine engine, Action goToMenu, Action startNewGame,
+        Action<Player, int>? onUnoCalled = null)
     {
         _engine = engine;
         _goToMenu = goToMenu;
         _startNewGame = startNewGame;
+        _onUnoCalled = onUnoCalled;
 
-        // El motor reparte 7 cartas a cada jugador y voltea la primera carta del descarte.
-        _engine.StartGame(PlayerNames);
+        // Si la primera carta es Salto o +2, el motor ya avanzó un turno al iniciar
+        _turnNumber = _engine.TopCard.Type is CardType.Skip or CardType.DrawTwo ? 2 : 1;
 
         Player1 = new PlayerViewModel(_engine.Players[0]);
         Player2 = new PlayerViewModel(_engine.Players[1]);
@@ -136,7 +144,7 @@ public partial class BoardViewModel : ViewModelBase
         _activePlayer.IsActive = true;
         UpdatePlayableCards();
 
-        // Se escucha después de StartGame porque los PlayerViewModel aún no existían.
+        // Se escucha al final porque los PlayerViewModel tienen que existir antes.
         _engine.OnTurnChanged += OnTurnChanged;
         _engine.OnCardPlayed += OnCardPlayed;
         _engine.OnCardDrawn += OnCardDrawn;
@@ -145,8 +153,15 @@ public partial class BoardViewModel : ViewModelBase
     }
 
     /// <summary>Constructor para el diseñador de Rider/Avalonia.</summary>
-    public BoardViewModel() : this(new GameEngine(), () => { }, () => { })
+    public BoardViewModel() : this(CreateDesignEngine(), () => { }, () => { })
     {
+    }
+
+    private static IGameEngine CreateDesignEngine()
+    {
+        var engine = new GameEngine();
+        engine.StartGame(new[] { "Jugador 1", "Jugador 2", "Jugador 3" });
+        return engine;
     }
 
     public PlayerViewModel Player1 { get; }
@@ -183,6 +198,8 @@ public partial class BoardViewModel : ViewModelBase
     /// </summary>
     private void OnTurnChanged(TurnChangedEventArgs e)
     {
+        _turnNumber++;
+
         if (_unoPlayer is not null)
         {
             _pendingTurnChange = e;
@@ -264,7 +281,12 @@ public partial class BoardViewModel : ViewModelBase
         ActiveColor = e.ActiveColor;
         UpdatePlayableCards();
 
-        if (e.Player.Hand.Count == 1 && !e.Player.HasDeclaredUno) OpenUnoWindow(player);
+        if (e.Player.Hand.Count == 1 && !e.Player.HasDeclaredUno)
+        {
+            // El cambio de turno todavía no llega: este es el turno en que tiró la carta
+            _unoTurnNumber = _turnNumber;
+            OpenUnoWindow(player);
+        }
     }
 
     // ---------- Robar y pasar ----------
@@ -374,6 +396,9 @@ public partial class BoardViewModel : ViewModelBase
         // del Core: el motor revisa esta propiedad antes de castigar con +2.
         player.Model.HasDeclaredUno = true;
 
+        // Por lo mismo, el motor no registra el UNO en el log: se avisa para guardarlo aparte
+        _onUnoCalled?.Invoke(player.Model, _unoTurnNumber);
+
         if (player == _unoPlayer) CloseUnoWindow();
     }
 
@@ -410,11 +435,10 @@ public partial class BoardViewModel : ViewModelBase
 
     // ---------- Victoria ----------
 
-    /// <summary>El motor avisa que alguien se quedó sin cartas, con la duración y sus puntos.</summary>
+    /// <summary>El motor avisa que alguien se quedó sin cartas, con la duración de la partida.</summary>
     private void OnGameOver(GameOverEventArgs e)
     {
         GameDurationText = $"{(int)e.Duration.TotalMinutes}:{e.Duration.Seconds:00}";
-        WinnerScore = e.WinnerScore;
         ShowVictory(GetPlayerViewModel(e.Winner));
     }
 

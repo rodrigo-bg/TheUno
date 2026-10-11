@@ -80,4 +80,24 @@ public class MatchRepository : IMatchRepository
 
         return stats;
     }
+
+    /// Lista las partidas terminadas, de la más reciente a la más antigua.
+    public async Task<List<MatchSummaryDto>> GetCompletedMatchesAsync()
+    {
+        var matches = await _context.Matches
+            .Where(m => m.EndedAt != null)
+            .Include(m => m.Winner)
+            .ToListAsync();
+
+        // El orden y los minutos se calculan en memoria porque SQLite no ordena DateTime ni TimeSpan
+        return matches
+            .OrderByDescending(m => m.StartedAt)
+            .Select(m => new MatchSummaryDto(
+                m.Id,
+                m.StartedAt,
+                m.Winner?.Name ?? "Sin ganador",
+                Math.Round(m.Duration.TotalMinutes, 2),
+                m.TotalTurns))
+            .ToList();
+    }
 }

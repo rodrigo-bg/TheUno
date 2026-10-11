@@ -62,6 +62,43 @@
             <Setter Property="BorderBrush" Value="#66000000" />
             <Setter Property="BorderThickness" Value="0,3,0,0" />
         </Style>
+        <!-- Cuadros de partidas y bitácora: mismo estilo que la tabla -->
+        <Style Selector="Border.panel">
+            <Setter Property="Background" Value="#3A2213" />
+            <Setter Property="BorderBrush" Value="Black" />
+            <Setter Property="BorderThickness" Value="6" />
+            <Setter Property="Padding" Value="16" />
+            <Setter Property="Height" Value="260" />
+            <Setter Property="BoxShadow" Value="10 10 0 0 #000000" />
+        </Style>
+        <Style Selector="TextBlock.small">
+            <Setter Property="FontSize" Value="11" />
+            <Setter Property="Foreground" Value="White" />
+            <Setter Property="LineHeight" Value="18" />
+            <Setter Property="TextWrapping" Value="Wrap" />
+        </Style>
+        <Style Selector="TextBlock.turn">
+            <Setter Property="Foreground" Value="#E6B400" />
+        </Style>
+        <Style Selector="TextBlock.message">
+            <Setter Property="Foreground" Value="#FF4040" />
+        </Style>
+
+        <!-- Lista de partidas: sin el fondo de Fluent; la elegida se marca en amarillo -->
+        <Style Selector="ListBox.matches">
+            <Setter Property="Background" Value="Transparent" />
+        </Style>
+        <Style Selector="ListBox.matches ListBoxItem">
+            <Setter Property="Padding" Value="8,8" />
+            <Setter Property="Cursor" Value="Hand" />
+        </Style>
+        <Style Selector="ListBox.matches ListBoxItem:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="#33FFFFFF" />
+        </Style>
+        <Style Selector="ListBox.matches ListBoxItem:selected /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="#66E6B400" />
+        </Style>
+
         <Style Selector="TextBlock.header, TextBlock.cell">
             <Setter Property="Effect">
                 <DropShadowEffect OffsetX="2" OffsetY="2" BlurRadius="0" Color="Black" Opacity="1" />
@@ -73,13 +110,12 @@
         <!-- Capa oscura para que la tabla se lea bien sobre la taberna -->
         <Panel Background="#99000000" />
 
-        <Button Classes="pixelButton backButton"
-                Content="← MENU"
-                Command="{Binding BackToMenuCommand}" />
-
+        <!-- Con la ventana chica, el contenido se puede desplazar hacia abajo -->
+        <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
         <StackPanel HorizontalAlignment="Center"
                     VerticalAlignment="Center"
-                    Spacing="40">
+                    Margin="0,24"
+                    Spacing="28">
             <controls:OutlinedText Text="HISTORIAL"
                                    FontSize="56"
                                    Fill="#E6B400"
@@ -91,7 +127,7 @@
             <Border Background="#3A2213"
                     BorderBrush="Black"
                     BorderThickness="6"
-                    Padding="32,24"
+                    Padding="24"
                     BoxShadow="10 10 0 0 #000000">
                 <StackPanel>
                     <!-- Encabezados: mismas columnas que los renglones -->
@@ -103,6 +139,13 @@
                         <TextBlock Grid.Column="4" Classes="header" Text="DERROTAS" />
                         <TextBlock Grid.Column="5" Classes="header" Text="% VICTORIAS" />
                     </Grid>
+
+                    <!-- Aviso cuando la API no responde o mientras carga -->
+                    <TextBlock Classes="cell"
+                               Margin="0,14"
+                               Foreground="#FF4040"
+                               IsVisible="{Binding HasStatusMessage}"
+                               Text="{Binding StatusMessage}" />
 
                     <ItemsControl ItemsSource="{Binding Rows}">
                         <ItemsControl.ItemTemplate>
@@ -122,6 +165,60 @@
                     </ItemsControl>
                 </StackPanel>
             </Border>
+
+            <!-- Partidas terminadas (izquierda) y bitácora de la partida elegida (derecha) -->
+            <Grid ColumnDefinitions="340,20,*" Width="880">
+                <Border Grid.Column="0" Classes="panel">
+                    <DockPanel>
+                        <TextBlock DockPanel.Dock="Top" Classes="header" Text="PARTIDAS" Margin="0,0,0,12" />
+                        <ListBox Classes="matches"
+                                 ItemsSource="{Binding Matches}"
+                                 SelectedItem="{Binding SelectedMatch}">
+                            <ListBox.ItemTemplate>
+                                <DataTemplate DataType="vm:MatchRow">
+                                    <StackPanel Spacing="6">
+                                        <TextBlock Classes="small">
+                                            <Run Text="{Binding DateText}" />
+                                            <Run Text="  GANÓ " />
+                                            <Run Foreground="#E6B400" Text="{Binding WinnerName}" />
+                                        </TextBlock>
+                                        <TextBlock Classes="small" Foreground="#CCCCCC" Text="{Binding DetailText}" />
+                                    </StackPanel>
+                                </DataTemplate>
+                            </ListBox.ItemTemplate>
+                        </ListBox>
+                    </DockPanel>
+                </Border>
+
+                <Border Grid.Column="2" Classes="panel">
+                    <DockPanel>
+                        <TextBlock DockPanel.Dock="Top" Classes="header" Text="BITÁCORA" Margin="0,0,0,12" />
+                        <TextBlock DockPanel.Dock="Top"
+                                   Classes="small message"
+                                   IsVisible="{Binding HasLogMessage}"
+                                   Text="{Binding LogMessage}" />
+                        <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+                            <ItemsControl ItemsSource="{Binding LogRows}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate DataType="vm:LogRow">
+                                        <Grid ColumnDefinitions="48,*" Margin="0,0,8,8">
+                                            <TextBlock Grid.Column="0" Classes="small turn" Text="{Binding TurnText}" />
+                                            <TextBlock Grid.Column="1" Classes="small" Text="{Binding Text}" />
+                                        </Grid>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </ScrollViewer>
+                    </DockPanel>
+                </Border>
+            </Grid>
         </StackPanel>
+        </ScrollViewer>
+
+        <!-- Va después del ScrollViewer para quedar encima: el ScrollViewer ocupa toda la pantalla
+             y, si el botón quedara debajo, se llevaría los clics -->
+        <Button Classes="pixelButton backButton"
+                Content="← MENU"
+                Command="{Binding BackToMenuCommand}" />
     </Panel>
 </UserControl>

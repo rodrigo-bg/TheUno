@@ -5,7 +5,6 @@ using Avalonia.Markup.Xaml;
 using Microsoft.Extensions.DependencyInjection;
 using TheUno.Core.Contracts;
 using TheUno.Infrastructure.Repositories;
-using TheUno.Infrastructure.Services;
 using TheUno.UI.Services;
 using TheUno.UI.ViewModels;
 
@@ -26,20 +25,22 @@ public partial class App : Application
         // 1. Configurar los servicios e inyección de dependencias
         var serviceCollection = new ServiceCollection();
 
-        // Registrar repositorios HTTP apuntando a FastAPI
+        // Registrar repositorios HTTP apuntando a FastAPI (127.0.0.1 en lugar de localhost: en Windows
+        // localhost también intenta IPv6 y tarda más en fallar cuando la API está cerrada).
+        // Si la API no responde, a los 3 segundos se deja de esperar y el juego sigue sin guardar.
         serviceCollection.AddHttpClient<IMatchRepository, ApiMatchRepository>(client =>
         {
-            client.BaseAddress = new Uri("http://localhost:8000/");
+            client.BaseAddress = new Uri("http://127.0.0.1:8000/");
+            client.Timeout = TimeSpan.FromSeconds(3);
         });
 
         serviceCollection.AddHttpClient<IGameLogRepository, ApiGameLogRepository>(client =>
         {
-            client.BaseAddress = new Uri("http://localhost:8000/");
+            client.BaseAddress = new Uri("http://127.0.0.1:8000/");
+            client.Timeout = TimeSpan.FromSeconds(3);
         });
 
-        // Registrar servicio de auditoría
-        serviceCollection.AddSingleton<GameAuditService>();
-
+        // La auditoría la hace el propio GameEngine con IGameLogRepository (sin GameAuditService, para no duplicar)
         Services = serviceCollection.BuildServiceProvider();
 
         // 2. Inicializar la ventana principal
@@ -47,7 +48,10 @@ public partial class App : Application
         {
             desktop.MainWindow = new MainWindow
             {
-                DataContext = new MainWindowViewModel(_music)
+                DataContext = new MainWindowViewModel(
+                    _music,
+                    Services.GetRequiredService<IMatchRepository>(),
+                    Services.GetRequiredService<IGameLogRepository>())
             };
 
             desktop.Exit += (_, _) => _music.Dispose();
