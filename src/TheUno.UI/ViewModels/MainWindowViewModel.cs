@@ -55,7 +55,8 @@ public partial class MainWindowViewModel : ViewModelBase
     private void PlayMusicFor(ViewModelBase view) =>
         _music.Play(view is BoardViewModel ? MusicPlayer.BoardTrack : MusicPlayer.MenuTrack);
 
-    private MenuViewModel CreateMenu() => new(StartGame, ShowHistory);
+    // Mientras no existe la sala de conexión, crear y unirse empiezan la partida local
+    private MenuViewModel CreateMenu() => new(StartGame, StartGame, ShowHistory);
 
     /// <summary>
     /// "Volver a jugar" en la pantalla de victoria vuelve a llamar a StartGame: partida nueva.

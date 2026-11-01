@@ -37,6 +37,26 @@
         <Style Selector="Button.history:pointerover /template/ ContentPresenter#PART_ContentPresenter">
             <Setter Property="Background" Value="#4060FF" />
         </Style>
+        <Style Selector="Button.create">
+            <Setter Property="Background" Value="#1FB800" />
+        </Style>
+        <Style Selector="Button.create:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="#33DB0F" />
+        </Style>
+        <Style Selector="Button.join">
+            <Setter Property="Background" Value="#E6B400" />
+        </Style>
+        <Style Selector="Button.join:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="#FFCC1A" />
+        </Style>
+        <Style Selector="Button.back">
+            <Setter Property="Background" Value="#222222" />
+            <Setter Property="FontSize" Value="16" />
+            <Setter Property="Padding" Value="20,18" />
+        </Style>
+        <Style Selector="Button.back:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="#444444" />
+        </Style>
     </UserControl.Styles>
 
     <Grid>
@@ -56,13 +76,32 @@
                     VerticalAlignment="Center"
                     Width="440"
                     Margin="0,80,48,0"
-                    Spacing="32">
+                    Spacing="32"
+                    IsVisible="{Binding !IsPlayOptionsOpen}">
             <Button Classes="pixelButton start"
                     Content="INICIAR JUEGO"
-                    Command="{Binding StartGameCommand}" />
+                    Command="{Binding ShowPlayOptionsCommand}" />
             <Button Classes="pixelButton history"
                     Content="VER HISTORIAL"
                     Command="{Binding ShowHistoryCommand}" />
+        </StackPanel>
+
+        <!-- Al picar "Iniciar juego": crear la partida en esta compu o unirse a la de otra -->
+        <StackPanel HorizontalAlignment="Right"
+                    VerticalAlignment="Center"
+                    Width="440"
+                    Margin="0,80,48,0"
+                    Spacing="32"
+                    IsVisible="{Binding IsPlayOptionsOpen}">
+            <Button Classes="pixelButton create"
+                    Content="CREAR PARTIDA"
+                    Command="{Binding CreateGameCommand}" />
+            <Button Classes="pixelButton join"
+                    Content="UNIRSE A PARTIDA"
+                    Command="{Binding JoinGameCommand}" />
+            <Button Classes="pixelButton back"
+                    Content="VOLVER"
+                    Command="{Binding HidePlayOptionsCommand}" />
         </StackPanel>
     </Grid>
 </UserControl>
