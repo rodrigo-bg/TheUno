@@ -66,7 +66,11 @@ public partial class LobbyViewModel : ViewModelBase
     [ObservableProperty]
     private string? _myPlayerName;
 
-    public LobbyViewModel(ILobbyService? lobby, bool isHost, Action goToMenu, Action<string> onGameStarted)
+    /// <param name="reconnectIp">
+    /// Al volver a jugar, la IP a la que ya estaba unido: se conecta solo y pasa directo a elegir jugador.
+    /// </param>
+    public LobbyViewModel(ILobbyService? lobby, bool isHost, Action goToMenu, Action<string> onGameStarted,
+        string? reconnectIp = null)
     {
         _lobby = lobby;
         _goToMenu = goToMenu;
@@ -83,6 +87,12 @@ public partial class LobbyViewModel : ViewModelBase
         }
 
         OnPlayersChanged();
+
+        if (!isHost && !string.IsNullOrWhiteSpace(reconnectIp))
+        {
+            ServerIp = reconnectIp;
+            ConnectCommand.Execute(null);
+        }
     }
 
     /// <summary>Constructor para el diseñador de Rider/Avalonia.</summary>

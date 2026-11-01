@@ -62,19 +62,25 @@ public partial class MainWindowViewModel : ViewModelBase
 
     private MenuViewModel CreateMenu() => new(() => ShowLobby(isHost: true), () => ShowLobby(isHost: false), ShowHistory);
 
-    /// <summary>Crear o unirse a partida: cada vez es una sala nueva.</summary>
-    private void ShowLobby(bool isHost)
+    /// <summary>
+    /// Crear o unirse a partida: cada vez es una sala nueva. Al volver a jugar se regresa aquí
+    /// con el mismo papel (quien creó la partida la vuelve a crear; quien se unió se reconecta a la misma IP).
+    /// </summary>
+    private void ShowLobby(bool isHost, string? reconnectIp = null)
     {
-        CurrentView = new LobbyViewModel(_createLobby?.Invoke(), isHost, ShowMenu, StartGame);
+        LobbyViewModel? lobby = null;
+        lobby = new LobbyViewModel(_createLobby?.Invoke(), isHost, ShowMenu,
+            name => StartGame(name, () => ShowLobby(isHost, lobby!.ServerIp)), reconnectIp);
+        CurrentView = lobby;
     }
 
     /// <summary>
-    /// "Volver a jugar" en la pantalla de victoria vuelve a llamar a StartGame: partida nueva.
-    /// Primero se crea la partida en la API; si responde, el motor guarda cada movimiento con ese Id.
-    /// Si la API no está abierta, se juega igual pero sin guardar.
+    /// Empieza una partida nueva. Primero se crea en la API; si responde, el motor guarda cada movimiento
+    /// con ese Id. Si la API no está abierta, se juega igual pero sin guardar.
     /// El jugador elegido en la sala queda abajo (Jugador 1); los otros siguen en el orden de los turnos.
+    /// "Volver a jugar" en la pantalla final llama a playAgain, que regresa a la sala.
     /// </summary>
-    private async void StartGame(string myPlayerName)
+    private async void StartGame(string myPlayerName, Action playAgain)
     {
         if (IsLoading) return;
 
@@ -99,7 +105,7 @@ public partial class MainWindowViewModel : ViewModelBase
         }
 
         // Cada partida usa un motor nuevo; el tablero lo recibe ya iniciado.
-        CurrentView = new BoardViewModel(engine, ShowMenu, () => StartGame(myPlayerName), onUnoCalled);
+        CurrentView = new BoardViewModel(engine, ShowMenu, playAgain, onUnoCalled);
     }
 
     /// <summary>
