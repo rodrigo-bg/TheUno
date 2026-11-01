@@ -30,7 +30,7 @@ public sealed class MusicPlayer : IDisposable
     // macOS
     private Process? _afplay;
 
-    public MusicPlayer(int volume = 60)
+    public MusicPlayer(int volume = 30)
     {
         _volume = volume / 100f;
     }
