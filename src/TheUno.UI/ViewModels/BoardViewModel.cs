@@ -110,7 +110,14 @@ public partial class BoardViewModel : ViewModelBase
     [ObservableProperty]
     private bool _isVictoryScreenOpen;
 
-    /// <summary>Nombre del ganador en mayúsculas, para la pantalla de victoria.</summary>
+    /// <summary>"¡¡GANASTE!!" si ganó el jugador de esta compu (el de abajo) o "¡¡PERDISTE!!" si ganó otro.</summary>
+    [ObservableProperty]
+    private string _victoryTitle = string.Empty;
+
+    /// <summary>
+    /// Nombre del ganador en mayúsculas, para la pantalla de victoria. Si ganó otro dice "Ganó RODRIGO"
+    /// (en minúsculas porque la fuente pixel no tiene la "Ó" mayúscula).
+    /// </summary>
     [ObservableProperty]
     private string _winnerName = string.Empty;
 
@@ -451,7 +458,7 @@ public partial class BoardViewModel : ViewModelBase
 
     /// <summary>
     /// Termina la partida: tras una pausa de 3 segundos (para que se vea la última carta en la mesa)
-    /// aparece la pantalla de victoria con el nombre del ganador.
+    /// aparece la pantalla final con el nombre del ganador y suena victoria o derrota.
     /// Mientras tanto ya no se puede robar ni tirar.
     /// </summary>
     public void ShowVictory(PlayerViewModel winner)
@@ -463,10 +470,16 @@ public partial class BoardViewModel : ViewModelBase
         DrawCardCommand.NotifyCanExecuteChanged();
         UpdatePlayableCards();
 
+        // El jugador de esta compu siempre está abajo (Player1)
+        var iWon = winner == Player1;
+
         DispatcherTimer.RunOnce(() =>
         {
-            WinnerName = winner.Name.ToUpperInvariant();
+            var name = winner.Name.ToUpperInvariant();
+            VictoryTitle = iWon ? "¡¡GANASTE!!" : "¡¡PERDISTE!!";
+            WinnerName = iWon ? name : $"Ganó {name}";
             IsVictoryScreenOpen = true;
+            App.Sounds.Play(iWon ? SoundEffects.WinSound : SoundEffects.LoseSound);
         }, TimeSpan.FromSeconds(3));
     }
 

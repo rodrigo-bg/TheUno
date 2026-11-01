@@ -17,6 +17,8 @@ public sealed class SoundEffects : IDisposable
 {
     public const string ButtonClick = "button_click.mp3";
     public const string CardSound = "card_sound.mp3";
+    public const string WinSound = "win_sound.mp3";
+    public const string LoseSound = "lose_sound.mp3";
 
     private static readonly string AudioFolder = Path.Combine(AppContext.BaseDirectory, "Assets", "Audio");
 

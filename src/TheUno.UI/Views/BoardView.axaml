@@ -662,7 +662,7 @@
                     VerticalAlignment="Center"
                     BoxShadow="10 10 0 0 #000000">
                 <StackPanel Spacing="20">
-                    <controls:OutlinedText Text="¡¡GANASTE!!"
+                    <controls:OutlinedText Text="{Binding VictoryTitle}"
                                            FontSize="50"
                                            Fill="#E6B400"
                                            Stroke="White"
