@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Runtime.Versioning;
+using Avalonia.Threading;
 using NAudio.Wave;
 using NAudio.Wave.SampleProviders;
 
@@ -27,7 +28,9 @@ public sealed class SoundEffects : IDisposable
     private static readonly Dictionary<string, float> Gains = new()
     {
         [CardSound] = 2f,
-        [ButtonClick] = 2f
+        [ButtonClick] = 2f,
+        [WinSound] = 5f,
+        [LoseSound] = 5f
     };
 
     // Varias cartas al mismo tiempo (un +4) se oyen como una sola, si no se suman y truenan
@@ -51,24 +54,37 @@ public sealed class SoundEffects : IDisposable
         _volume = volume / 100f;
     }
 
-    /// <summary>Toca el sonido una vez. Si el sistema no puede reproducir audio, no pasa nada.</summary>
-    public void Play(string sound)
+    /// <summary>
+    /// Toca el sonido una vez. Si el sistema no puede reproducir audio, no pasa nada.
+    /// onFinished se llama en el hilo de la interfaz cuando el sonido termina (o de inmediato si no sonó),
+    /// por ejemplo para reanudar la música.
+    /// </summary>
+    public void Play(string sound, Action? onFinished = null)
     {
-        if (_failed) return;
+        var finished = onFinished is null ? null : (Action)(() => Dispatcher.UIThread.Post(onFinished));
 
         var now = DateTime.UtcNow;
-        if (_lastPlayed.TryGetValue(sound, out var last) && now - last < RepeatGap) return;
+        if (_failed || (_lastPlayed.TryGetValue(sound, out var last) && now - last < RepeatGap))
+        {
+            finished?.Invoke();
+            return;
+        }
+
         _lastPlayed[sound] = now;
 
         try
         {
             if (OperatingSystem.IsWindows())
             {
-                PlayWindows(sound);
+                PlayWindows(sound, finished);
             }
             else if (OperatingSystem.IsMacOS())
             {
-                PlayMac(sound);
+                PlayMac(sound, finished);
+            }
+            else
+            {
+                finished?.Invoke();
             }
         }
         catch (Exception ex)
@@ -76,11 +92,12 @@ public sealed class SoundEffects : IDisposable
             // Sin audio el juego sigue igual; no se vuelve a intentar para no trabar cada clic
             Debug.WriteLine($"No se pudo reproducir el sonido: {ex.Message}");
             _failed = true;
+            finished?.Invoke();
         }
     }
 
     [SupportedOSPlatform("windows")]
-    private void PlayWindows(string sound)
+    private void PlayWindows(string sound, Action? finished)
     {
         if (_mixer is null)
         {
@@ -96,7 +113,7 @@ public sealed class SoundEffects : IDisposable
             _samples[sound] = samples;
         }
 
-        _mixer.AddMixerInput(new MemorySampleProvider(samples));
+        _mixer.AddMixerInput(new MemorySampleProvider(samples, finished));
     }
 
     /// <summary>
@@ -134,7 +151,7 @@ public sealed class SoundEffects : IDisposable
     }
 
     // En macOS cada sonido es un afplay aparte, así pueden sonar varios a la vez
-    private void PlayMac(string sound)
+    private void PlayMac(string sound, Action? finished)
     {
         var info = new ProcessStartInfo("afplay")
         {
@@ -148,7 +165,11 @@ public sealed class SoundEffects : IDisposable
         info.ArgumentList.Add(Path.Combine(AudioFolder, sound));
 
         var process = new Process { StartInfo = info, EnableRaisingEvents = true };
-        process.Exited += (_, _) => process.Dispose();
+        process.Exited += (_, _) =>
+        {
+            process.Dispose();
+            finished?.Invoke();
+        };
         process.Start();
     }
 
@@ -164,15 +185,20 @@ public sealed class SoundEffects : IDisposable
         _mixer = null;
     }
 
-    /// <summary>Lee un sonido ya cargado de principio a fin; al terminar, el mezclador lo quita solo.</summary>
+    /// <summary>
+    /// Lee un sonido ya cargado de principio a fin; al terminar, el mezclador lo quita solo
+    /// y se avisa una vez que acabó.
+    /// </summary>
     private sealed class MemorySampleProvider : ISampleProvider
     {
         private readonly float[] _samples;
+        private Action? _finished;
         private int _position;
 
-        public MemorySampleProvider(float[] samples)
+        public MemorySampleProvider(float[] samples, Action? finished)
         {
             _samples = samples;
+            _finished = finished;
         }
 
         public WaveFormat WaveFormat => MixFormat;
@@ -182,6 +208,13 @@ public sealed class SoundEffects : IDisposable
             var count = Math.Min(buffer.Length, _samples.Length - _position);
             _samples.AsSpan(_position, count).CopyTo(buffer);
             _position += count;
+
+            if (count < buffer.Length)
+            {
+                _finished?.Invoke();
+                _finished = null;
+            }
+
             return count;
         }
     }

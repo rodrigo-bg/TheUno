@@ -14,8 +14,10 @@ namespace TheUno.UI;
 
 public partial class App : Application
 {
-    private readonly MusicPlayer _music = new();
     public static IServiceProvider? Services { get; private set; }
+
+    /// <summary>Música de fondo de toda la app; el tablero la pausa mientras suena victoria o derrota.</summary>
+    public static MusicPlayer Music { get; } = new();
 
     /// <summary>Efectos de sonido de toda la app (botones y cartas).</summary>
     public static SoundEffects Sounds { get; } = new();
@@ -60,7 +62,7 @@ public partial class App : Application
             desktop.MainWindow = new MainWindow
             {
                 DataContext = new MainWindowViewModel(
-                    _music,
+                    Music,
                     Services.GetRequiredService<IMatchRepository>(),
                     Services.GetRequiredService<IGameLogRepository>(),
                     LobbyFactory)
@@ -68,7 +70,7 @@ public partial class App : Application
 
             desktop.Exit += (_, _) =>
             {
-                _music.Dispose();
+                Music.Dispose();
                 Sounds.Dispose();
             };
         }
