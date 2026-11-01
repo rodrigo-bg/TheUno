@@ -12,6 +12,7 @@ namespace TheUno.UI.ViewModels;
 /// Pantallas para entrar a una partida en red. Quien la crea ve su IP y elige jugador;
 /// quien se une escribe la IP del servidor, se conecta y luego elige jugador.
 /// Un jugador que ya eligió alguien más no se puede volver a elegir.
+/// Después todos esperan en la sala de conexión hasta que quien la creó inicia el juego.
 /// </summary>
 public partial class LobbyViewModel : ViewModelBase
 {
@@ -22,10 +23,14 @@ public partial class LobbyViewModel : ViewModelBase
     private readonly ILobbyService? _lobby;
     private readonly Action _goToMenu;
 
+    // Pasa al tablero con el nombre del jugador de esta compu
+    private readonly Action<string> _onGameStarted;
+
     /// <summary>Se está esperando al servidor: los botones no responden para no mandar dos veces.</summary>
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(ConnectCommand))]
     [NotifyCanExecuteChangedFor(nameof(ChoosePlayerCommand))]
+    [NotifyCanExecuteChangedFor(nameof(StartGameCommand))]
     private bool _isBusy;
 
     /// <summary>Quien se une ya se conectó al servidor: puede elegir jugador.</summary>
@@ -37,7 +42,12 @@ public partial class LobbyViewModel : ViewModelBase
     /// <summary>Ya eligió jugador: pasa a la sala de conexión.</summary>
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(ShowPlayerPicker))]
+    [NotifyCanExecuteChangedFor(nameof(StartGameCommand))]
     private bool _isInRoom;
+
+    /// <summary>Texto del contador de la sala, por ejemplo "JUGADORES 2/3".</summary>
+    [ObservableProperty]
+    private string _playerCountText = string.Empty;
 
     /// <summary>IP que escribe quien se une.</summary>
     [ObservableProperty]
@@ -56,20 +66,27 @@ public partial class LobbyViewModel : ViewModelBase
     [ObservableProperty]
     private string? _myPlayerName;
 
-    public LobbyViewModel(ILobbyService? lobby, bool isHost, Action goToMenu)
+    public LobbyViewModel(ILobbyService? lobby, bool isHost, Action goToMenu, Action<string> onGameStarted)
     {
         _lobby = lobby;
         _goToMenu = goToMenu;
+        _onGameStarted = onGameStarted;
         IsHost = isHost;
         LocalIp = isHost ? NetworkInfo.GetLocalIPv4() ?? "SIN RED" : string.Empty;
         PlayerOptions = new ObservableCollection<PlayerOption>(PlayerNames.Select(n => new PlayerOption(n)));
+        RoomSlots = new ObservableCollection<RoomSlot>(PlayerNames.Select(_ => new RoomSlot()));
 
-        if (_lobby is not null) _lobby.PlayersChanged += UpdateTakenPlayers;
-        UpdateTakenPlayers();
+        if (_lobby is not null)
+        {
+            _lobby.PlayersChanged += OnPlayersChanged;
+            _lobby.GameStarted += OnGameStarted;
+        }
+
+        OnPlayersChanged();
     }
 
     /// <summary>Constructor para el diseñador de Rider/Avalonia.</summary>
-    public LobbyViewModel() : this(null, true, () => { })
+    public LobbyViewModel() : this(null, true, () => { }, _ => { })
     {
     }
 
@@ -86,6 +103,9 @@ public partial class LobbyViewModel : ViewModelBase
     public bool ShowConnectForm => !IsHost && !IsConnected;
 
     public bool ShowPlayerPicker => (IsHost || IsConnected) && !IsInRoom;
+
+    /// <summary>Los 3 lugares de la sala: primero los que ya se unieron, después los vacíos.</summary>
+    public ObservableCollection<RoomSlot> RoomSlots { get; }
 
     // ---------- Unirse ----------
 
@@ -130,7 +150,7 @@ public partial class LobbyViewModel : ViewModelBase
 
                 if (!await _lobby.ChoosePlayerAsync(option.Name))
                 {
-                    UpdateTakenPlayers();
+                    OnPlayersChanged();
                     ShowStatus("Ese jugador ya lo eligió alguien más", isError: true);
                     return;
                 }
@@ -139,6 +159,7 @@ public partial class LobbyViewModel : ViewModelBase
             MyPlayerName = option.Name;
             StatusMessage = string.Empty;
             IsInRoom = true;
+            OnPlayersChanged();
         }
         catch (Exception)
         {
@@ -152,14 +173,63 @@ public partial class LobbyViewModel : ViewModelBase
 
     private bool CanChoosePlayer(PlayerOption? option) => !IsBusy;
 
-    /// <summary>Desactiva los jugadores que ya eligió alguien.</summary>
-    private void UpdateTakenPlayers()
+    // ---------- Sala de conexión ----------
+
+    /// <summary>
+    /// Alguien entró o salió: se desactivan en el selector los jugadores ya elegidos
+    /// y se llenan los lugares de la sala.
+    /// </summary>
+    private void OnPlayersChanged()
     {
-        var joined = _lobby?.JoinedPlayers ?? Array.Empty<string>();
+        // Sin servidor, en la sala solo está el jugador de esta compu
+        var joined = _lobby?.JoinedPlayers
+                     ?? (MyPlayerName is null ? Array.Empty<string>() : new[] { MyPlayerName });
+
         foreach (var option in PlayerOptions)
         {
             option.IsTaken = joined.Contains(option.Name);
         }
+
+        for (var i = 0; i < RoomSlots.Count; i++)
+        {
+            var name = i < joined.Count ? joined[i] : null;
+            RoomSlots[i].Name = name;
+            RoomSlots[i].IsMe = name is not null && name == MyPlayerName;
+        }
+
+        PlayerCountText = $"JUGADORES {joined.Count}/{PlayerNames.Length}";
+        StartGameCommand.NotifyCanExecuteChanged();
+    }
+
+    /// <summary>Solo quien creó la partida la inicia, y solo cuando ya están los 3.</summary>
+    [RelayCommand(CanExecute = nameof(CanStartGame))]
+    private async Task StartGameAsync()
+    {
+        IsBusy = true;
+        try
+        {
+            // El servidor avisa a todos con GameStarted (también a esta compu)
+            if (_lobby is not null) await _lobby.StartGameAsync();
+        }
+        catch (Exception)
+        {
+            ShowStatus("Se perdió la conexión con el servidor", isError: true);
+        }
+        finally
+        {
+            IsBusy = false;
+        }
+    }
+
+    private bool CanStartGame() =>
+        IsHost && IsInRoom && !IsBusy && RoomSlots.All(slot => slot.Name is not null);
+
+    private void OnGameStarted()
+    {
+        if (MyPlayerName is null) return;
+
+        StopListening();
+        _onGameStarted(MyPlayerName);
     }
 
     // ---------- Salir ----------
@@ -169,7 +239,7 @@ public partial class LobbyViewModel : ViewModelBase
     {
         if (_lobby is not null)
         {
-            _lobby.PlayersChanged -= UpdateTakenPlayers;
+            StopListening();
             try
             {
                 await _lobby.LeaveAsync();
@@ -183,11 +253,38 @@ public partial class LobbyViewModel : ViewModelBase
         _goToMenu();
     }
 
+    private void StopListening()
+    {
+        if (_lobby is null) return;
+
+        _lobby.PlayersChanged -= OnPlayersChanged;
+        _lobby.GameStarted -= OnGameStarted;
+    }
+
     private void ShowStatus(string message, bool isError)
     {
         StatusMessage = message;
         IsStatusError = isError;
     }
+}
+
+/// <summary>Un lugar de la sala de conexión: vacío mientras nadie lo ocupa.</summary>
+public partial class RoomSlot : ObservableObject
+{
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsEmpty))]
+    [NotifyPropertyChangedFor(nameof(DisplayName))]
+    private string? _name;
+
+    /// <summary>Es el jugador de esta compu: se marca en la lista.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(DisplayName))]
+    private bool _isMe;
+
+    public bool IsEmpty => Name is null;
+
+    // En minúsculas porque la fuente pixel no tiene la "Ú" mayúscula
+    public string DisplayName => IsMe ? $"{Name} (tú)" : Name ?? string.Empty;
 }
 
 /// <summary>Botón de un jugador en el selector: se desactiva si alguien más ya lo eligió.</summary>
