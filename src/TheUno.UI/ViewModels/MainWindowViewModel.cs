@@ -17,18 +17,21 @@ namespace TheUno.UI.ViewModels;
 /// </summary>
 public partial class MainWindowViewModel : ViewModelBase
 {
-    // Los 3 integrantes del equipo con los mismos Ids que la semilla de la base de datos.
-    // Orden de los asientos: Jugador 1 (abajo), Jugador 2 (izquierda), Jugador 3 (derecha).
+    // Los 3 integrantes del equipo con los mismos Ids que la semilla de la base de datos,
+    // en el orden de los turnos. Los nombres son los mismos que se eligen en la sala.
     private static readonly (Guid Id, string Name)[] SeedPlayers =
     {
-        (Guid.Parse("22222222-2222-2222-2222-222222222222"), "Tona"),
-        (Guid.Parse("11111111-1111-1111-1111-111111111111"), "Rodri"),
-        (Guid.Parse("33333333-3333-3333-3333-333333333333"), "Alejandro")
+        (Guid.Parse("22222222-2222-2222-2222-222222222222"), "TONATIUH"),
+        (Guid.Parse("11111111-1111-1111-1111-111111111111"), "RODRIGO"),
+        (Guid.Parse("33333333-3333-3333-3333-333333333333"), "ALEJANDRO")
     };
 
     private readonly MusicPlayer _music;
     private readonly IMatchRepository _matchRepository;
     private readonly IGameLogRepository _logRepository;
+
+    // Crea la conexión con la sala; sin ella la sala solo espera (todavía no hay servidor)
+    private readonly Func<ILobbyService>? _createLobby;
 
     [ObservableProperty]
     private ViewModelBase _currentView;
@@ -40,11 +43,13 @@ public partial class MainWindowViewModel : ViewModelBase
     [ObservableProperty]
     private bool _isLoading;
 
-    public MainWindowViewModel(MusicPlayer music, IMatchRepository matchRepository, IGameLogRepository logRepository)
+    public MainWindowViewModel(MusicPlayer music, IMatchRepository matchRepository, IGameLogRepository logRepository,
+        Func<ILobbyService>? createLobby = null)
     {
         _music = music;
         _matchRepository = matchRepository;
         _logRepository = logRepository;
+        _createLobby = createLobby;
         _currentView = CreateMenu();
         PlayMusicFor(_currentView);
     }
@@ -55,19 +60,29 @@ public partial class MainWindowViewModel : ViewModelBase
     private void PlayMusicFor(ViewModelBase view) =>
         _music.Play(view is BoardViewModel ? MusicPlayer.BoardTrack : MusicPlayer.MenuTrack);
 
-    // Mientras no existe la sala de conexión, crear y unirse empiezan la partida local
-    private MenuViewModel CreateMenu() => new(StartGame, StartGame, ShowHistory);
+    private MenuViewModel CreateMenu() => new(() => ShowLobby(isHost: true), () => ShowLobby(isHost: false), ShowHistory);
+
+    /// <summary>Crear o unirse a partida: cada vez es una sala nueva.</summary>
+    private void ShowLobby(bool isHost)
+    {
+        CurrentView = new LobbyViewModel(_createLobby?.Invoke(), isHost, ShowMenu, StartGame);
+    }
 
     /// <summary>
     /// "Volver a jugar" en la pantalla de victoria vuelve a llamar a StartGame: partida nueva.
     /// Primero se crea la partida en la API; si responde, el motor guarda cada movimiento con ese Id.
     /// Si la API no está abierta, se juega igual pero sin guardar.
+    /// El jugador elegido en la sala queda abajo (Jugador 1); los otros siguen en el orden de los turnos.
     /// </summary>
-    private async void StartGame()
+    private async void StartGame(string myPlayerName)
     {
         if (IsLoading) return;
 
-        var players = SeedPlayers.Select(p => new Player(p.Id, p.Name)).ToList();
+        var mySeat = Array.FindIndex(SeedPlayers, p => p.Name == myPlayerName);
+        var players = SeedPlayers
+            .Select((_, i) => SeedPlayers[(Math.Max(mySeat, 0) + i) % SeedPlayers.Length])
+            .Select(p => new Player(p.Id, p.Name))
+            .ToList();
 
         IsLoading = true;
         var matchId = await TryCreateMatchAsync(players);
@@ -84,7 +99,7 @@ public partial class MainWindowViewModel : ViewModelBase
         }
 
         // Cada partida usa un motor nuevo; el tablero lo recibe ya iniciado.
-        CurrentView = new BoardViewModel(engine, ShowMenu, StartGame, onUnoCalled);
+        CurrentView = new BoardViewModel(engine, ShowMenu, () => StartGame(myPlayerName), onUnoCalled);
     }
 
     /// <summary>

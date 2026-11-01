@@ -15,6 +15,12 @@ public partial class App : Application
     private readonly MusicPlayer _music = new();
     public static IServiceProvider? Services { get; private set; }
 
+    /// <summary>
+    /// Crea la conexión con la sala de cada partida en red. Mientras no exista el servidor
+    /// queda vacía y la sala solo espera; se puede poner antes de que arranque la app.
+    /// </summary>
+    public static Func<ILobbyService>? LobbyFactory { get; set; }
+
     public override void Initialize()
     {
         AvaloniaXamlLoader.Load(this);
@@ -51,7 +57,8 @@ public partial class App : Application
                 DataContext = new MainWindowViewModel(
                     _music,
                     Services.GetRequiredService<IMatchRepository>(),
-                    Services.GetRequiredService<IGameLogRepository>())
+                    Services.GetRequiredService<IGameLogRepository>(),
+                    LobbyFactory)
             };
 
             desktop.Exit += (_, _) => _music.Dispose();
