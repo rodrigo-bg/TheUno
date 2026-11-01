@@ -1,6 +1,8 @@
 using System;
 using Avalonia;
+using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
+using Avalonia.Interactivity;
 using Avalonia.Markup.Xaml;
 using Microsoft.Extensions.DependencyInjection;
 using TheUno.Core.Contracts;
@@ -14,6 +16,9 @@ public partial class App : Application
 {
     private readonly MusicPlayer _music = new();
     public static IServiceProvider? Services { get; private set; }
+
+    /// <summary>Efectos de sonido de toda la app (botones y cartas).</summary>
+    public static SoundEffects Sounds { get; } = new();
 
     /// <summary>
     /// Crea la conexión con la sala de cada partida en red. Mientras no exista el servidor
@@ -61,8 +66,20 @@ public partial class App : Application
                     LobbyFactory)
             };
 
-            desktop.Exit += (_, _) => _music.Dispose();
+            desktop.Exit += (_, _) =>
+            {
+                _music.Dispose();
+                Sounds.Dispose();
+            };
         }
+
+        // Todos los botones de todas las pantallas suenan al picarlos, menos las cartas y el mazo:
+        // esos tienen su propio sonido cuando la carta de verdad se tira o se roba.
+        Button.ClickEvent.AddClassHandler<Button>((button, _) =>
+        {
+            if (button.Classes.Contains("cardButton") || button.Classes.Contains("drawPile")) return;
+            Sounds.Play(SoundEffects.ButtonClick);
+        }, RoutingStrategies.Bubble, handledEventsToo: true);
 
         base.OnFrameworkInitializationCompleted();
     }
