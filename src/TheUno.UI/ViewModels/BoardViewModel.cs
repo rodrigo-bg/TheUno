@@ -8,6 +8,7 @@ using TheUno.Core.Contracts;
 using TheUno.Core.Engine;
 using TheUno.Core.Events;
 using TheUno.Core.Models;
+using TheUno.UI.Services;
 
 namespace TheUno.UI.ViewModels;
 
@@ -275,6 +276,8 @@ public partial class BoardViewModel : ViewModelBase
     /// </summary>
     private void OnCardPlayed(CardPlayedEventArgs e)
     {
+        App.Sounds.Play(SoundEffects.CardSound);
+
         var player = GetPlayerViewModel(e.Player);
         player.SyncHand();
         TopDiscardCard = new CardViewModel(e.Card);
@@ -313,7 +316,11 @@ public partial class BoardViewModel : ViewModelBase
     /// Aparece la carta robada en la mano de quien la recibió (también las de un +2 o +4,
     /// o las de la penalización por no cantar UNO).
     /// </summary>
-    private void OnCardDrawn(CardDrawnEventArgs e) => GetPlayerViewModel(e.Player).SyncHand();
+    private void OnCardDrawn(CardDrawnEventArgs e)
+    {
+        App.Sounds.Play(SoundEffects.CardSound);
+        GetPlayerViewModel(e.Player).SyncHand();
+    }
 
     // ---------- Selector de color ----------
 
