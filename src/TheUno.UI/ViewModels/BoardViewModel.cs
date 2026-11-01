@@ -457,8 +457,9 @@ public partial class BoardViewModel : ViewModelBase
     }
 
     /// <summary>
-    /// Termina la partida: tras una pausa de 3 segundos (para que se vea la última carta en la mesa)
+    /// Termina la partida: tras una pausa de 1.5 segundos (para que se vea la última carta en la mesa)
     /// aparece la pantalla final con el nombre del ganador y suena victoria o derrota.
+    /// La música se pausa mientras suena y sigue al terminar.
     /// Mientras tanto ya no se puede robar ni tirar.
     /// </summary>
     public void ShowVictory(PlayerViewModel winner)
@@ -479,8 +480,10 @@ public partial class BoardViewModel : ViewModelBase
             VictoryTitle = iWon ? "¡¡GANASTE!!" : "¡¡PERDISTE!!";
             WinnerName = iWon ? name : $"Ganó {name}";
             IsVictoryScreenOpen = true;
-            App.Sounds.Play(iWon ? SoundEffects.WinSound : SoundEffects.LoseSound);
-        }, TimeSpan.FromSeconds(3));
+
+            App.Music.Pause();
+            App.Sounds.Play(iWon ? SoundEffects.WinSound : SoundEffects.LoseSound, App.Music.Resume);
+        }, TimeSpan.FromSeconds(1.5));
     }
 
     [RelayCommand]
