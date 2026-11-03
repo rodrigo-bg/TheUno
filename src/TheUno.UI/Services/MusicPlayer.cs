@@ -30,7 +30,7 @@ public sealed class MusicPlayer : IDisposable
     // macOS
     private Process? _afplay;
 
-    public MusicPlayer(int volume = 60)
+    public MusicPlayer(int volume = 30)
     {
         _volume = volume / 100f;
     }
@@ -61,6 +61,57 @@ public sealed class MusicPlayer : IDisposable
             Debug.WriteLine($"No se pudo reproducir la música: {ex.Message}");
             Stop();
         }
+    }
+
+    /// <summary>
+    /// Pausa la canción actual sin perder por dónde iba (por ejemplo, mientras suena victoria o derrota).
+    /// Si mientras tanto se cambia de canción, la nueva suena normal.
+    /// </summary>
+    public void Pause()
+    {
+        try
+        {
+            if (OperatingSystem.IsWindows())
+            {
+                _output?.Pause();
+            }
+            else
+            {
+                SignalMac("-STOP");
+            }
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"No se pudo pausar la música: {ex.Message}");
+        }
+    }
+
+    /// <summary>Sigue la canción desde donde se pausó.</summary>
+    public void Resume()
+    {
+        try
+        {
+            if (OperatingSystem.IsWindows())
+            {
+                _output?.Play();
+            }
+            else
+            {
+                SignalMac("-CONT");
+            }
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"No se pudo reanudar la música: {ex.Message}");
+        }
+    }
+
+    // afplay no tiene pausa: se detiene y se continúa el proceso con kill -STOP / -CONT
+    private void SignalMac(string signal)
+    {
+        if (_afplay is not { } afplay) return;
+
+        Process.Start("kill", new[] { signal, afplay.Id.ToString(CultureInfo.InvariantCulture) })?.Dispose();
     }
 
     [SupportedOSPlatform("windows")]

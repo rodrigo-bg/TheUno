@@ -1,0 +1,290 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="using:TheUno.UI.ViewModels"
+             mc:Ignorable="d" d:DesignWidth="1280" d:DesignHeight="720"
+             x:Class="TheUno.UI.Views.LobbyView"
+             x:DataType="vm:LobbyViewModel"
+             x:CompileBindings="True"
+             RenderOptions.BitmapInterpolationMode="None">
+
+    <Design.DataContext>
+        <vm:LobbyViewModel />
+    </Design.DataContext>
+
+    <!-- Mismo fondo que el menú -->
+    <UserControl.Background>
+        <ImageBrush Source="avares://TheUno.UI/Assets/Backgrounds/menu_8bit.jpg"
+                    Stretch="UniformToFill"
+                    AlignmentX="Left" />
+    </UserControl.Background>
+
+    <UserControl.Styles>
+        <!-- Botón para regresar al menú (base en Styles/PixelStyles.axaml), igual al del tablero -->
+        <Style Selector="Button.backButton">
+            <Setter Property="Background" Value="#222222" />
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="Padding" Value="14,12" />
+            <Setter Property="BorderThickness" Value="4" />
+            <Setter Property="HorizontalAlignment" Value="Left" />
+            <Setter Property="VerticalAlignment" Value="Top" />
+            <Setter Property="Margin" Value="20,20,0,0" />
+            <Setter Property="Effect">
+                <DropShadowEffect OffsetX="4" OffsetY="4" BlurRadius="0" Color="Black" Opacity="1" />
+            </Setter>
+        </Style>
+        <Style Selector="Button.backButton:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="#444444" />
+        </Style>
+
+        <!-- Cuadro café de 8 bits, igual al de los diálogos del tablero -->
+        <Style Selector="Border.lobbyPanel">
+            <Setter Property="Background" Value="#3A2213" />
+            <Setter Property="BorderBrush" Value="Black" />
+            <Setter Property="BorderThickness" Value="6" />
+            <Setter Property="Padding" Value="48,40" />
+            <Setter Property="Width" Value="680" />
+            <Setter Property="HorizontalAlignment" Value="Center" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="BoxShadow" Value="10 10 0 0 #000000" />
+        </Style>
+
+        <Style Selector="TextBlock">
+            <Setter Property="Foreground" Value="White" />
+            <Setter Property="HorizontalAlignment" Value="Center" />
+            <Setter Property="TextAlignment" Value="Center" />
+        </Style>
+        <Style Selector="TextBlock.title">
+            <Setter Property="FontSize" Value="26" />
+            <Setter Property="Foreground" Value="#E6B400" />
+            <Setter Property="Effect">
+                <DropShadowEffect OffsetX="3" OffsetY="3" BlurRadius="0" Color="Black" Opacity="1" />
+            </Setter>
+        </Style>
+        <Style Selector="TextBlock.label">
+            <Setter Property="FontSize" Value="13" />
+        </Style>
+        <Style Selector="TextBlock.hint">
+            <Setter Property="FontSize" Value="10" />
+            <Setter Property="Foreground" Value="#BBBBBB" />
+            <Setter Property="LineHeight" Value="18" />
+            <Setter Property="TextWrapping" Value="Wrap" />
+        </Style>
+        <Style Selector="TextBlock.ip">
+            <Setter Property="FontSize" Value="30" />
+            <Setter Property="Foreground" Value="#E6B400" />
+        </Style>
+        <Style Selector="TextBlock.status">
+            <Setter Property="FontSize" Value="13" />
+            <Setter Property="Foreground" Value="#40FF00" />
+        </Style>
+        <Style Selector="TextBlock.status.error">
+            <Setter Property="Foreground" Value="#FF4040" />
+        </Style>
+
+        <!-- Campo para escribir la IP: negro con borde grueso, sin los cambios de color de Fluent -->
+        <Style Selector="TextBox.ipBox">
+            <Setter Property="FontSize" Value="18" />
+            <Setter Property="Foreground" Value="White" />
+            <Setter Property="Background" Value="#1A1A1A" />
+            <Setter Property="BorderBrush" Value="Black" />
+            <Setter Property="BorderThickness" Value="4" />
+            <Setter Property="CornerRadius" Value="0" />
+            <Setter Property="Padding" Value="14,16" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+        </Style>
+        <Style Selector="TextBox.ipBox:pointerover /template/ Border#PART_BorderElement">
+            <Setter Property="Background" Value="#1A1A1A" />
+            <Setter Property="BorderBrush" Value="White" />
+        </Style>
+        <Style Selector="TextBox.ipBox:focus /template/ Border#PART_BorderElement">
+            <Setter Property="Background" Value="#1A1A1A" />
+            <Setter Property="BorderBrush" Value="#E6B400" />
+        </Style>
+        <Style Selector="TextBox.ipBox:pointerover">
+            <Setter Property="Foreground" Value="White" />
+        </Style>
+        <Style Selector="TextBox.ipBox:focus">
+            <Setter Property="Foreground" Value="White" />
+        </Style>
+
+        <Style Selector="Button.connect">
+            <Setter Property="Background" Value="#1FB800" />
+            <Setter Property="FontSize" Value="14" />
+            <Setter Property="Padding" Value="20,18" />
+        </Style>
+        <Style Selector="Button.connect:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="#33DB0F" />
+        </Style>
+
+        <!-- Jugadores para elegir; el que ya eligió alguien se ve gris y no responde -->
+        <Style Selector="Button.playerOption">
+            <Setter Property="Background" Value="#0020FF" />
+            <Setter Property="FontSize" Value="14" />
+            <Setter Property="Padding" Value="12,22" />
+            <Setter Property="Width" Value="180" />
+        </Style>
+        <Style Selector="Button.playerOption:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="#4060FF" />
+        </Style>
+        <Style Selector="Button.playerOption:disabled /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="#555555" />
+            <Setter Property="Foreground" Value="#999999" />
+        </Style>
+        <Style Selector="TextBlock.taken">
+            <Setter Property="FontSize" Value="9" />
+            <Setter Property="Foreground" Value="#DDDDDD" />
+            <Setter Property="Margin" Value="0,8,0,0" />
+        </Style>
+
+        <!-- Sala de conexión: un renglón por lugar; el de esta compu en amarillo y los vacíos en gris -->
+        <Style Selector="Border.slot">
+            <Setter Property="Background" Value="#33000000" />
+            <Setter Property="BorderBrush" Value="#66000000" />
+            <Setter Property="BorderThickness" Value="3" />
+            <Setter Property="Padding" Value="20,18" />
+        </Style>
+        <Style Selector="Border.slot TextBlock">
+            <Setter Property="FontSize" Value="16" />
+            <Setter Property="HorizontalAlignment" Value="Left" />
+        </Style>
+        <Style Selector="Border.slot.me TextBlock">
+            <Setter Property="Foreground" Value="#E6B400" />
+        </Style>
+        <Style Selector="Border.slot TextBlock.waiting">
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="Foreground" Value="#888888" />
+        </Style>
+        <Style Selector="TextBlock.count">
+            <Setter Property="FontSize" Value="16" />
+            <Setter Property="Foreground" Value="#E6B400" />
+        </Style>
+        <Style Selector="Button.startGame">
+            <Setter Property="Background" Value="#FF0000" />
+            <Setter Property="FontSize" Value="18" />
+            <Setter Property="Padding" Value="20,22" />
+        </Style>
+        <Style Selector="Button.startGame:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="#FF4040" />
+        </Style>
+        <Style Selector="Button.startGame:disabled /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="#555555" />
+            <Setter Property="Foreground" Value="#999999" />
+        </Style>
+    </UserControl.Styles>
+
+    <Grid>
+        <Border Classes="lobbyPanel" IsVisible="{Binding !IsInRoom}">
+            <StackPanel Spacing="28">
+                <TextBlock Classes="title" Text="{Binding Title}" />
+
+                <!-- Crear partida: la IP de esta compu para que los demás se unan -->
+                <StackPanel Spacing="12" IsVisible="{Binding IsHost}">
+                    <TextBlock Classes="label" Text="TU IP" />
+                    <TextBlock Classes="ip" Text="{Binding LocalIp}" />
+                    <TextBlock Classes="hint"
+                               Text="Los demás escriben esta IP en UNIRSE A PARTIDA" />
+                </StackPanel>
+
+                <!-- Unirse a partida: IP del servidor y botón para conectarse (Enter también conecta) -->
+                <StackPanel Spacing="12" IsVisible="{Binding ShowConnectForm}">
+                    <TextBlock Classes="label" Text="IP DEL SERVIDOR" />
+                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="20">
+                        <TextBox Classes="ipBox"
+                                 Text="{Binding ServerIp}"
+                                 Watermark="192.168.1.50">
+                            <TextBox.KeyBindings>
+                                <KeyBinding Gesture="Enter" Command="{Binding ConnectCommand}" />
+                            </TextBox.KeyBindings>
+                        </TextBox>
+                        <Button Grid.Column="1"
+                                Classes="pixelButton connect"
+                                Content="CONECTAR"
+                                Command="{Binding ConnectCommand}" />
+                    </Grid>
+                </StackPanel>
+
+                <TextBlock Classes="status"
+                           Classes.error="{Binding IsStatusError}"
+                           Text="{Binding StatusMessage}"
+                           IsVisible="{Binding StatusMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+
+                <!-- Selector de jugador: cada nombre solo lo puede tener una compu -->
+                <StackPanel Spacing="20" IsVisible="{Binding ShowPlayerPicker}">
+                    <TextBlock Classes="label" Text="¿Con qué jugador quieres jugar?" />
+                    <ItemsControl ItemsSource="{Binding PlayerOptions}" HorizontalAlignment="Center">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <StackPanel Orientation="Horizontal" Spacing="20" />
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate DataType="vm:PlayerOption">
+                                <Button Classes="pixelButton playerOption"
+                                        IsEnabled="{Binding !IsTaken}"
+                                        Command="{Binding $parent[UserControl].((vm:LobbyViewModel)DataContext).ChoosePlayerCommand}"
+                                        CommandParameter="{Binding}">
+                                    <StackPanel>
+                                        <TextBlock Text="{Binding Name}" />
+                                        <TextBlock Classes="taken" Text="OCUPADO" IsVisible="{Binding IsTaken}" />
+                                    </StackPanel>
+                                </Button>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
+            </StackPanel>
+        </Border>
+
+        <!-- Sala de conexión: quiénes ya se unieron. Quien creó la partida la inicia con los 3. -->
+        <Border Classes="lobbyPanel" IsVisible="{Binding IsInRoom}">
+            <StackPanel Spacing="24">
+                <TextBlock Classes="title" Text="Sala de conexión" />
+
+                <!-- Quien creó la partida sigue viendo su IP por si alguien no la ha escrito -->
+                <TextBlock Classes="label" IsVisible="{Binding IsHost}">
+                    <Run Text="IP " /><Run Foreground="#E6B400" Text="{Binding LocalIp}" />
+                </TextBlock>
+
+                <TextBlock Classes="count" Text="{Binding PlayerCountText}" />
+
+                <ItemsControl ItemsSource="{Binding RoomSlots}">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <StackPanel Spacing="12" />
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate DataType="vm:RoomSlot">
+                            <Border Classes="slot" Classes.me="{Binding IsMe}">
+                                <Panel>
+                                    <TextBlock Text="{Binding DisplayName}" IsVisible="{Binding !IsEmpty}" />
+                                    <TextBlock Classes="waiting" Text="Esperando jugador..." IsVisible="{Binding IsEmpty}" />
+                                </Panel>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+
+                <TextBlock Classes="status"
+                           Classes.error="{Binding IsStatusError}"
+                           Text="{Binding StatusMessage}"
+                           IsVisible="{Binding StatusMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+
+                <Button Classes="pixelButton startGame"
+                        Content="INICIAR JUEGO"
+                        IsVisible="{Binding IsHost}"
+                        Command="{Binding StartGameCommand}" />
+                <TextBlock Classes="hint"
+                           Text="Esperando a que quien creó la partida inicie el juego..."
+                           IsVisible="{Binding !IsHost}" />
+            </StackPanel>
+        </Border>
+
+        <!-- Va al final para quedar encima del cuadro y recibir los clics -->
+        <Button Classes="pixelButton backButton"
+                Content="← MENU"
+                Command="{Binding BackToMenuCommand}" />
+    </Grid>
+</UserControl>

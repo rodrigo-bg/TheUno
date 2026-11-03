@@ -26,6 +26,9 @@
         <DataTemplate DataType="vm:StatsViewModel">
             <views:StatsView />
         </DataTemplate>
+        <DataTemplate DataType="vm:LobbyViewModel">
+            <views:LobbyView />
+        </DataTemplate>
     </Window.DataTemplates>
 
     <Panel>

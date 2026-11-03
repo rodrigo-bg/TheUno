@@ -8,6 +8,7 @@ using TheUno.Core.Contracts;
 using TheUno.Core.Engine;
 using TheUno.Core.Events;
 using TheUno.Core.Models;
+using TheUno.UI.Services;
 
 namespace TheUno.UI.ViewModels;
 
@@ -109,7 +110,14 @@ public partial class BoardViewModel : ViewModelBase
     [ObservableProperty]
     private bool _isVictoryScreenOpen;
 
-    /// <summary>Nombre del ganador en mayúsculas, para la pantalla de victoria.</summary>
+    /// <summary>"¡¡GANASTE!!" si ganó el jugador de esta compu (el de abajo) o "¡¡PERDISTE!!" si ganó otro.</summary>
+    [ObservableProperty]
+    private string _victoryTitle = string.Empty;
+
+    /// <summary>
+    /// Nombre del ganador en mayúsculas, para la pantalla de victoria. Si ganó otro dice "Ganó RODRIGO"
+    /// (en minúsculas porque la fuente pixel no tiene la "Ó" mayúscula).
+    /// </summary>
     [ObservableProperty]
     private string _winnerName = string.Empty;
 
@@ -275,6 +283,8 @@ public partial class BoardViewModel : ViewModelBase
     /// </summary>
     private void OnCardPlayed(CardPlayedEventArgs e)
     {
+        App.Sounds.Play(SoundEffects.CardSound);
+
         var player = GetPlayerViewModel(e.Player);
         player.SyncHand();
         TopDiscardCard = new CardViewModel(e.Card);
@@ -313,7 +323,11 @@ public partial class BoardViewModel : ViewModelBase
     /// Aparece la carta robada en la mano de quien la recibió (también las de un +2 o +4,
     /// o las de la penalización por no cantar UNO).
     /// </summary>
-    private void OnCardDrawn(CardDrawnEventArgs e) => GetPlayerViewModel(e.Player).SyncHand();
+    private void OnCardDrawn(CardDrawnEventArgs e)
+    {
+        App.Sounds.Play(SoundEffects.CardSound);
+        GetPlayerViewModel(e.Player).SyncHand();
+    }
 
     // ---------- Selector de color ----------
 
@@ -443,8 +457,9 @@ public partial class BoardViewModel : ViewModelBase
     }
 
     /// <summary>
-    /// Termina la partida: tras una pausa de 3 segundos (para que se vea la última carta en la mesa)
-    /// aparece la pantalla de victoria con el nombre del ganador.
+    /// Termina la partida: tras una pausa de 1.5 segundos (para que se vea la última carta en la mesa)
+    /// aparece la pantalla final con el nombre del ganador y suena victoria o derrota.
+    /// La música se pausa mientras suena y sigue al terminar.
     /// Mientras tanto ya no se puede robar ni tirar.
     /// </summary>
     public void ShowVictory(PlayerViewModel winner)
@@ -456,11 +471,19 @@ public partial class BoardViewModel : ViewModelBase
         DrawCardCommand.NotifyCanExecuteChanged();
         UpdatePlayableCards();
 
+        // El jugador de esta compu siempre está abajo (Player1)
+        var iWon = winner == Player1;
+
         DispatcherTimer.RunOnce(() =>
         {
-            WinnerName = winner.Name.ToUpperInvariant();
+            var name = winner.Name.ToUpperInvariant();
+            VictoryTitle = iWon ? "¡¡GANASTE!!" : "¡¡PERDISTE!!";
+            WinnerName = iWon ? name : $"Ganó {name}";
             IsVictoryScreenOpen = true;
-        }, TimeSpan.FromSeconds(3));
+
+            App.Music.Pause();
+            App.Sounds.Play(iWon ? SoundEffects.WinSound : SoundEffects.LoseSound, App.Music.Resume);
+        }, TimeSpan.FromSeconds(1.5));
     }
 
     [RelayCommand]
