@@ -22,10 +22,12 @@ public sealed class MusicPlayer : IDisposable
     private readonly float _volume;
     private string? _currentTrack;
     private string _musicPath = string.Empty;
+    private bool _isMuted;
 
     // Windows
     private MediaFoundationReader? _reader;
     private WasapiPlayer? _output;
+    private VolumeSampleProvider? _volumeProvider;
 
     // macOS
     private Process? _afplay;
@@ -34,6 +36,34 @@ public sealed class MusicPlayer : IDisposable
     {
         _volume = volume / 100f;
     }
+
+    /// <summary>Silencia la música sin detenerla; la canción que empiece mientras tanto también va en silencio.</summary>
+    public bool IsMuted
+    {
+        get => _isMuted;
+        set
+        {
+            _isMuted = value;
+
+            try
+            {
+                if (OperatingSystem.IsWindows())
+                {
+                    if (_volumeProvider is not null) _volumeProvider.Volume = CurrentVolume;
+                }
+                else
+                {
+                    SignalMac(value ? "-STOP" : "-CONT");
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"No se pudo silenciar la música: {ex.Message}");
+            }
+        }
+    }
+
+    private float CurrentVolume => _isMuted ? 0 : _volume;
 
     /// <summary>Cambia a la canción indicada; si ya está sonando no la reinicia.</summary>
     public void Play(string track)
@@ -95,7 +125,7 @@ public sealed class MusicPlayer : IDisposable
             {
                 _output?.Play();
             }
-            else
+            else if (!_isMuted)
             {
                 SignalMac("-CONT");
             }
@@ -118,10 +148,10 @@ public sealed class MusicPlayer : IDisposable
     private void StartWindows()
     {
         _reader = new MediaFoundationReader(_musicPath);
-        var volume = new VolumeSampleProvider(new LoopSampleProvider(_reader)) { Volume = _volume };
+        _volumeProvider = new VolumeSampleProvider(new LoopSampleProvider(_reader)) { Volume = CurrentVolume };
 
         _output = new WasapiPlayerBuilder().WithSharedMode().Build();
-        _output.Init(volume.ToWaveProvider());
+        _output.Init(_volumeProvider.ToWaveProvider());
         _output.Play();
     }
 
@@ -131,6 +161,7 @@ public sealed class MusicPlayer : IDisposable
         _output?.Stop();
         _output?.Dispose();
         _output = null;
+        _volumeProvider = null;
 
         _reader?.Dispose();
         _reader = null;
@@ -162,6 +193,7 @@ public sealed class MusicPlayer : IDisposable
 
         _afplay = process;
         process.Start();
+        if (_isMuted) SignalMac("-STOP");
     }
 
     private void Stop()

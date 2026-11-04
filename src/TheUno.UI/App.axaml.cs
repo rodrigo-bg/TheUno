@@ -22,6 +22,17 @@ public partial class App : Application
     /// <summary>Efectos de sonido de toda la app (botones y cartas).</summary>
     public static SoundEffects Sounds { get; } = new();
 
+    /// <summary>Silencia todo el juego: la música y los efectos.</summary>
+    public static bool IsMuted
+    {
+        get => Music.IsMuted;
+        set
+        {
+            Music.IsMuted = value;
+            Sounds.IsMuted = value;
+        }
+    }
+
     /// <summary>
     /// Crea la conexión con la sala de cada partida en red. Por defecto es la del servidor real;
     /// se puede cambiar antes de que arranque la app.
