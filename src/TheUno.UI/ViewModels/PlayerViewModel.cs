@@ -28,6 +28,9 @@ public partial class PlayerViewModel : ViewModelBase
     [ObservableProperty]
     private int _cardCount;
 
+    // Es el jugador de esta compu: su mano llega completa en SyncHand
+    private bool _hasOwnCards;
+
     public PlayerViewModel(string name)
     {
         Name = name;
@@ -43,6 +46,8 @@ public partial class PlayerViewModel : ViewModelBase
     /// </summary>
     public void SyncHand(IReadOnlyList<Card> cards, IReadOnlyCollection<Guid> playableIds)
     {
+        _hasOwnCards = true;
+
         for (var i = Hand.Count - 1; i >= 0; i--)
         {
             if (cards.All(c => c.Id != Hand[i].Card.Id)) Hand.RemoveAt(i);
@@ -57,5 +62,14 @@ public partial class PlayerViewModel : ViewModelBase
         {
             card.IsPlayable = playableIds.Contains(card.Card.Id);
         }
+    }
+
+    /// <summary>La mano de un rival se dibuja boca abajo, con tantas cartas como tenga.</summary>
+    partial void OnCardCountChanged(int value)
+    {
+        if (_hasOwnCards) return;
+
+        while (Hand.Count > value) Hand.RemoveAt(Hand.Count - 1);
+        while (Hand.Count < value) Hand.Add(CardViewModel.CreateBack());
     }
 }
