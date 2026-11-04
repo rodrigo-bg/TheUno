@@ -57,6 +57,29 @@
         <Style Selector="Button.back:pointerover /template/ ContentPresenter#PART_ContentPresenter">
             <Setter Property="Background" Value="#444444" />
         </Style>
+
+        <!-- Botón de sonido: solo la imagen, sin el fondo que Fluent le pone al pasar el mouse -->
+        <Style Selector="Button.soundButton">
+            <Setter Property="Width" Value="48" />
+            <Setter Property="Height" Value="48" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="Margin" Value="20,20,0,0" />
+            <Setter Property="HorizontalAlignment" Value="Left" />
+            <Setter Property="VerticalAlignment" Value="Top" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="RenderTransform" Value="scale(1)" />
+        </Style>
+        <Style Selector="Button.soundButton /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="Transparent" />
+        </Style>
+        <Style Selector="Button.soundButton:pointerover">
+            <Setter Property="RenderTransform" Value="scale(1.12)" />
+        </Style>
+        <Style Selector="Button.soundButton:pressed">
+            <Setter Property="RenderTransform" Value="scale(0.94)" />
+        </Style>
     </UserControl.Styles>
 
     <Grid>
@@ -103,5 +126,13 @@
                     Content="VOLVER"
                     Command="{Binding HidePlayOptionsCommand}" />
         </StackPanel>
+
+        <!-- Sonido del juego, arriba a la izquierda: la imagen cambia con y sin audio -->
+        <Button Classes="soundButton" Command="{Binding ToggleSoundCommand}">
+            <Panel>
+                <Image Source="avares://TheUno.UI/Assets/Icons/sound_on.png" IsVisible="{Binding !IsMuted}" />
+                <Image Source="avares://TheUno.UI/Assets/Icons/sound_off.png" IsVisible="{Binding IsMuted}" />
+            </Panel>
+        </Button>
     </Grid>
 </UserControl>
