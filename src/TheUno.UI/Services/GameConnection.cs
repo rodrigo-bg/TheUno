@@ -77,6 +77,10 @@ public sealed class GameConnection : IAsyncDisposable
     public IDisposable On<T>(string message, Action<T> handler) =>
         GetConnection().On<T>(message, value => Dispatcher.UIThread.Post(() => handler(value)));
 
+    /// <summary>Igual que el anterior, para mensajes con dos datos.</summary>
+    public IDisposable On<T1, T2>(string message, Action<T1, T2> handler) =>
+        GetConnection().On<T1, T2>(message, (first, second) => Dispatcher.UIThread.Post(() => handler(first, second)));
+
     /// <summary>Igual que el anterior, para mensajes que no traen datos.</summary>
     public IDisposable On(string message, Action handler) =>
         GetConnection().On(message, () => Dispatcher.UIThread.Post(handler));
