@@ -22,11 +22,22 @@ public partial class App : Application
     /// <summary>Efectos de sonido de toda la app (botones y cartas).</summary>
     public static SoundEffects Sounds { get; } = new();
 
+    /// <summary>Silencia todo el juego: la música y los efectos.</summary>
+    public static bool IsMuted
+    {
+        get => Music.IsMuted;
+        set
+        {
+            Music.IsMuted = value;
+            Sounds.IsMuted = value;
+        }
+    }
+
     /// <summary>
-    /// Crea la conexión con la sala de cada partida en red. Mientras no exista el servidor
-    /// queda vacía y la sala solo espera; se puede poner antes de que arranque la app.
+    /// Crea la conexión con la sala de cada partida en red. Por defecto es la del servidor real;
+    /// se puede cambiar antes de que arranque la app.
     /// </summary>
-    public static Func<ILobbyService>? LobbyFactory { get; set; }
+    public static Func<ILobbyService> LobbyFactory { get; set; } = () => new SignalRLobbyService();
 
     public override void Initialize()
     {

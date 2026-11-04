@@ -19,12 +19,15 @@ public partial class LobbyViewModel : ViewModelBase
     /// <summary>Los 3 jugadores de la partida, en el orden en que se muestran.</summary>
     public static readonly string[] PlayerNames = { "RODRIGO", "TONATIUH", "ALEJANDRO" };
 
-    // Sin servicio todavía no hay servidor con quien hablar: la sala se queda esperando
+    // Solo es null en el diseñador de Rider/Avalonia
     private readonly ILobbyService? _lobby;
     private readonly Action _goToMenu;
 
     // Pasa al tablero con el nombre del jugador de esta compu
     private readonly Action<string> _onGameStarted;
+
+    // La sesión cuya conexión se está vigilando mientras se espera en la sala
+    private IGameSession? _watchedSession;
 
     /// <summary>Se está esperando al servidor: los botones no responden para no mandar dos veces.</summary>
     [ObservableProperty]
@@ -103,6 +106,9 @@ public partial class LobbyViewModel : ViewModelBase
     /// <summary>Esta compu creó la partida (es el servidor).</summary>
     public bool IsHost { get; }
 
+    /// <summary>La partida que empieza al salir de la sala.</summary>
+    public IGameSession? Session => _lobby?.Session;
+
     public string Title => IsHost ? "CREAR PARTIDA" : "UNIRSE A PARTIDA";
 
     /// <summary>IP de esta compu, la que los demás escriben para unirse. Solo la ve quien crea la partida.</summary>
@@ -128,6 +134,7 @@ public partial class LobbyViewModel : ViewModelBase
             if (_lobby is null) throw new InvalidOperationException("No hay servidor.");
 
             await _lobby.ConnectAsync(ServerIp.Trim());
+            WatchConnection();
             IsConnected = true;
             ShowStatus("¡Conexión exitosa!", isError: false);
         }
@@ -156,7 +163,11 @@ public partial class LobbyViewModel : ViewModelBase
             if (_lobby is not null)
             {
                 // Quien crea la partida la abre al elegir su jugador, así ya tiene nombre al entrar a la sala
-                if (IsHost) await _lobby.CreateGameAsync();
+                if (IsHost)
+                {
+                    await _lobby.CreateGameAsync();
+                    WatchConnection();
+                }
 
                 if (!await _lobby.ChoosePlayerAsync(option.Name))
                 {
@@ -173,7 +184,7 @@ public partial class LobbyViewModel : ViewModelBase
         }
         catch (Exception)
         {
-            ShowStatus("Se perdió la conexión con el servidor", isError: true);
+            ShowStatus("No se pudo conectar con el servidor", isError: true);
         }
         finally
         {
@@ -183,6 +194,33 @@ public partial class LobbyViewModel : ViewModelBase
 
     private bool CanChoosePlayer(PlayerOption? option) => !IsBusy;
 
+    // ---------- Conexión ----------
+
+    /// <summary>Escucha la conexión de la sesión actual. Cambia si se vuelve a conectar.</summary>
+    private void WatchConnection()
+    {
+        if (_watchedSession == Session) return;
+
+        if (_watchedSession is not null) _watchedSession.ConnectionLost -= OnConnectionLost;
+        _watchedSession = Session;
+        if (_watchedSession is not null) _watchedSession.ConnectionLost += OnConnectionLost;
+    }
+
+    /// <summary>Se cayó el servidor antes de empezar: se regresa al paso de conectarse o elegir jugador.</summary>
+    private void OnConnectionLost()
+    {
+        IsInRoom = false;
+        IsConnected = false;
+        MyPlayerName = null;
+
+        foreach (var option in PlayerOptions)
+        {
+            option.IsTaken = false;
+        }
+
+        ShowStatus("Se perdió la conexión con el servidor", isError: true);
+    }
+
     // ---------- Sala de conexión ----------
 
     /// <summary>
@@ -191,7 +229,7 @@ public partial class LobbyViewModel : ViewModelBase
     /// </summary>
     private void OnPlayersChanged()
     {
-        // Sin servidor, en la sala solo está el jugador de esta compu
+        // Sin servicio, en la sala solo está el jugador de esta compu
         var joined = _lobby?.JoinedPlayers
                      ?? (MyPlayerName is null ? Array.Empty<string>() : new[] { MyPlayerName });
 
@@ -269,6 +307,7 @@ public partial class LobbyViewModel : ViewModelBase
 
         _lobby.PlayersChanged -= OnPlayersChanged;
         _lobby.GameStarted -= OnGameStarted;
+        if (_watchedSession is not null) _watchedSession.ConnectionLost -= OnConnectionLost;
     }
 
     private void ShowStatus(string message, bool isError)

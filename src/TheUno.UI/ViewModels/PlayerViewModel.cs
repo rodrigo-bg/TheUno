@@ -1,5 +1,6 @@
+using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Collections.Specialized;
 using System.Linq;
 using CommunityToolkit.Mvvm.ComponentModel;
 using TheUno.Core.Models;
@@ -23,41 +24,52 @@ public partial class PlayerViewModel : ViewModelBase
     [ObservableProperty]
     private bool _showUnoButton;
 
-    public PlayerViewModel(Player model)
+    /// <summary>Cuántas cartas tiene. Es lo único que se sabe de la mano de un rival.</summary>
+    [ObservableProperty]
+    private int _cardCount;
+
+    // Es el jugador de esta compu: su mano llega completa en SyncHand
+    private bool _hasOwnCards;
+
+    public PlayerViewModel(string name)
     {
-        Model = model;
-        Hand.CollectionChanged += OnHandChanged;
-        SyncHand();
+        Name = name;
     }
 
-    /// <summary>Jugador del motor de juego al que representa este ViewModel.</summary>
-    public Player Model { get; }
-
-    public string Name => Model.Name;
+    public string Name { get; }
 
     public ObservableCollection<CardViewModel> Hand { get; } = new();
 
     /// <summary>
-    /// Iguala la mano visible con la del motor: quita las cartas que ya no tiene y agrega las nuevas.
+    /// Iguala la mano visible con la que mandó el servidor: quita las cartas que ya no tiene y agrega las nuevas.
     /// Las cartas que se quedan conservan su CardViewModel, así no se reconstruye toda la mano.
     /// </summary>
-    public void SyncHand()
+    public void SyncHand(IReadOnlyList<Card> cards, IReadOnlyCollection<Guid> playableIds)
     {
+        _hasOwnCards = true;
+
         for (var i = Hand.Count - 1; i >= 0; i--)
         {
-            if (!Model.Hand.Contains(Hand[i].Card)) Hand.RemoveAt(i);
+            if (cards.All(c => c.Id != Hand[i].Card.Id)) Hand.RemoveAt(i);
         }
 
-        foreach (var card in Model.Hand)
+        foreach (var card in cards)
         {
-            if (Hand.All(c => c.Card != card)) Hand.Add(new CardViewModel(card));
+            if (Hand.All(c => c.Card.Id != card.Id)) Hand.Add(new CardViewModel(card));
+        }
+
+        foreach (var card in Hand)
+        {
+            card.IsPlayable = playableIds.Contains(card.Card.Id);
         }
     }
 
-    private void OnHandChanged(object? sender, NotifyCollectionChangedEventArgs e)
+    /// <summary>La mano de un rival se dibuja boca abajo, con tantas cartas como tenga.</summary>
+    partial void OnCardCountChanged(int value)
     {
-        // Si vuelve a tener más de 1 carta (por ejemplo, al robar), el UNO cantado ya no cuenta
-        // y tendrá que volver a cantarlo cuando le quede 1.
-        if (Hand.Count > 1) HasCalledUno = false;
+        if (_hasOwnCards) return;
+
+        while (Hand.Count > value) Hand.RemoveAt(Hand.Count - 1);
+        while (Hand.Count < value) Hand.Add(CardViewModel.CreateBack());
     }
 }

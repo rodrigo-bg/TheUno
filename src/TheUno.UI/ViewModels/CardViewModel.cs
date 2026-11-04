@@ -27,6 +27,19 @@ public partial class CardViewModel : ViewModelBase
         AssetName = GetAssetName(card);
     }
 
+    private CardViewModel(Card card, string assetName)
+    {
+        Card = card;
+        AssetName = assetName;
+    }
+
+    /// <summary>
+    /// Carta boca abajo de un rival. No representa ninguna carta real: el cliente nunca recibe
+    /// las manos de los demás, solo cuántas cartas tienen.
+    /// </summary>
+    public static CardViewModel CreateBack() =>
+        new(new Card(Guid.Empty, CardColor.None, CardType.Wild), "back");
+
     public Card Card { get; }
 
     public string AssetName { get; }

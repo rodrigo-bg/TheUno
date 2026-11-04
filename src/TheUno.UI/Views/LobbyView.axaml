@@ -123,7 +123,7 @@
             <Setter Property="Background" Value="#0020FF" />
             <Setter Property="FontSize" Value="14" />
             <Setter Property="Padding" Value="12,22" />
-            <Setter Property="Width" Value="180" />
+            <Setter Property="Width" Value="170" />
         </Style>
         <Style Selector="Button.playerOption:pointerover /template/ ContentPresenter#PART_ContentPresenter">
             <Setter Property="Background" Value="#4060FF" />
