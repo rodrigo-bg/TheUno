@@ -103,6 +103,9 @@ public partial class LobbyViewModel : ViewModelBase
     /// <summary>Esta compu creó la partida (es el servidor).</summary>
     public bool IsHost { get; }
 
+    /// <summary>La partida que empieza al salir de la sala.</summary>
+    public IGameSession? Session => _lobby?.Session;
+
     public string Title => IsHost ? "CREAR PARTIDA" : "UNIRSE A PARTIDA";
 
     /// <summary>IP de esta compu, la que los demás escriben para unirse. Solo la ve quien crea la partida.</summary>

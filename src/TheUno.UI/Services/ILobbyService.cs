@@ -15,6 +15,9 @@ public interface ILobbyService
     /// <summary>Jugadores que ya eligieron nombre, en el orden en que se unieron.</summary>
     IReadOnlyList<string> JoinedPlayers { get; }
 
+    /// <summary>La partida de esta sala. Cuando llega GameStarted ya trae la primera mesa.</summary>
+    IGameSession? Session { get; }
+
     /// <summary>Alguien se unió a la sala o se salió de ella.</summary>
     event Action? PlayersChanged;
 

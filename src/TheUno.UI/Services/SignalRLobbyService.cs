@@ -15,8 +15,14 @@ public sealed class SignalRLobbyService : ILobbyService
 
     private readonly GameConnection _connection = new();
     private List<string> _joinedPlayers = new();
+    private SignalRGameSession? _session;
+
+    // El servidor ya avisó que empieza, pero todavía no llega la primera mesa
+    private bool _isStarting;
 
     public IReadOnlyList<string> JoinedPlayers => _joinedPlayers;
+
+    public IGameSession? Session => _session;
 
     public event Action? PlayersChanged;
     public event Action? GameStarted;
@@ -31,7 +37,10 @@ public sealed class SignalRLobbyService : ILobbyService
     {
         await _connection.ConnectAsync(serverIp);
         _connection.On<List<string>>(HubMessages.PlayersChanged, SetJoinedPlayers);
-        _connection.On(HubMessages.GameStarted, () => GameStarted?.Invoke());
+        _connection.On(HubMessages.GameStarted, () => _isStarting = true);
+
+        _session = new SignalRGameSession(_connection);
+        _session.StateChanged += OnStateChanged;
 
         // Pueden haber llegado otros antes que esta compu
         SetJoinedPlayers(await _connection.InvokeAsync<List<string>>(HubMethods.GetTakenPlayers));
@@ -58,5 +67,14 @@ public sealed class SignalRLobbyService : ILobbyService
     {
         _joinedPlayers = players;
         PlayersChanged?.Invoke();
+    }
+
+    // Se avisa con la primera mesa ya en la sesión, para que el tablero nunca abra vacío
+    private void OnStateChanged(GameStateDto state)
+    {
+        if (!_isStarting) return;
+
+        _isStarting = false;
+        GameStarted?.Invoke();
     }
 }
