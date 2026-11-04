@@ -257,32 +257,52 @@ public partial class BoardViewModel : ViewModelBase
 
     /// <summary>
     /// El jugador en turno tira una carta. Un comodín o +4 primero abre el selector de color,
-    /// porque el color se manda junto con la carta.
+    /// porque el color se manda junto con la carta. La mesa cambia cuando el servidor contesta.
     /// </summary>
-    [RelayCommand]
-    private void PlayCard(CardViewModel card)
+    [RelayCommand(AllowConcurrentExecutions = true)]
+    private async Task PlayCardAsync(CardViewModel card)
     {
         if (!card.IsPlayable) return;
 
         if (card.Card.Type is CardType.Wild or CardType.WildDrawFour)
         {
-            AskForColor();
+            AskForColor(color => _ = SendAsync(session => session.PlayCardAsync(card.Card.Id, color)));
+            return;
+        }
+
+        await SendAsync(session => session.PlayCardAsync(card.Card.Id));
+    }
+
+    /// <summary>
+    /// Manda una jugada al servidor. Si la rechaza (por ejemplo, un doble clic), la mesa se queda como está.
+    /// </summary>
+    private async Task SendAsync(Func<IGameSession, Task> move)
+    {
+        if (_session is null) return;
+
+        try
+        {
+            await move(_session);
+        }
+        catch (Exception)
+        {
+            // Las reglas las decide el servidor: aquí no hay nada que deshacer
         }
     }
 
     // ---------- Robar y pasar ----------
 
+    /// <summary>
+    /// El jugador en turno roba una carta del mazo. Si no se puede tirar, el servidor pasa el turno solo;
+    /// si se puede, el jugador sigue en turno y elige entre tirarla o pasar.
+    /// </summary>
     [RelayCommand(CanExecute = nameof(CanDrawCard))]
-    private void DrawCard()
-    {
-    }
+    private Task DrawCardAsync() => SendAsync(session => session.DrawCardAsync());
 
     private bool CanDrawCard() => CanDraw && !_isGameOver;
 
     [RelayCommand(CanExecute = nameof(CanPassTurn))]
-    private void PassTurn()
-    {
-    }
+    private Task PassTurnAsync() => SendAsync(session => session.PassTurnAsync());
 
     // ---------- Selector de color ----------
 
@@ -347,7 +367,11 @@ public partial class BoardViewModel : ViewModelBase
 
     /// <summary>El jugador de esta compu pica ¡UNO!.</summary>
     [RelayCommand]
-    private void CallUno(PlayerViewModel player) => CloseUnoWindow();
+    private async Task CallUnoAsync(PlayerViewModel player)
+    {
+        CloseUnoWindow();
+        await SendAsync(session => session.CallUnoAsync());
+    }
 
     /// <summary>
     /// Un jugador recibió 2 cartas por no cantar UNO. Las cartas llegan con el siguiente estado;
