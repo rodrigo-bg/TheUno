@@ -19,7 +19,7 @@ public partial class LobbyViewModel : ViewModelBase
     /// <summary>Los 3 jugadores de la partida, en el orden en que se muestran.</summary>
     public static readonly string[] PlayerNames = { "RODRIGO", "TONATIUH", "ALEJANDRO" };
 
-    // Sin servicio todavía no hay servidor con quien hablar: la sala se queda esperando
+    // Solo es null en el diseñador de Rider/Avalonia
     private readonly ILobbyService? _lobby;
     private readonly Action _goToMenu;
 
@@ -173,7 +173,7 @@ public partial class LobbyViewModel : ViewModelBase
         }
         catch (Exception)
         {
-            ShowStatus("Se perdió la conexión con el servidor", isError: true);
+            ShowStatus("No se pudo conectar con el servidor", isError: true);
         }
         finally
         {
@@ -191,7 +191,7 @@ public partial class LobbyViewModel : ViewModelBase
     /// </summary>
     private void OnPlayersChanged()
     {
-        // Sin servidor, en la sala solo está el jugador de esta compu
+        // Sin servicio, en la sala solo está el jugador de esta compu
         var joined = _lobby?.JoinedPlayers
                      ?? (MyPlayerName is null ? Array.Empty<string>() : new[] { MyPlayerName });
 

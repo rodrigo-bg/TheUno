@@ -23,10 +23,10 @@ public partial class App : Application
     public static SoundEffects Sounds { get; } = new();
 
     /// <summary>
-    /// Crea la conexión con la sala de cada partida en red. Mientras no exista el servidor
-    /// queda vacía y la sala solo espera; se puede poner antes de que arranque la app.
+    /// Crea la conexión con la sala de cada partida en red. Por defecto es la del servidor real;
+    /// se puede cambiar antes de que arranque la app.
     /// </summary>
-    public static Func<ILobbyService>? LobbyFactory { get; set; }
+    public static Func<ILobbyService> LobbyFactory { get; set; } = () => new SignalRLobbyService();
 
     public override void Initialize()
     {
