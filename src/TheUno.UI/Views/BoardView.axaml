@@ -650,6 +650,31 @@
                 </StackPanel>
             </Border>
         </Panel>
+        <!-- Aviso de partida interrumpida: alguien se salió o se cayó el servidor -->
+        <Panel IsVisible="{Binding IsInterruptedNoticeOpen}" Background="#B3000000">
+            <Border Background="#3A2213"
+                    BorderBrush="Black"
+                    BorderThickness="6"
+                    Padding="48,40"
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Center"
+                    BoxShadow="10 10 0 0 #000000">
+                <StackPanel Spacing="40">
+                    <TextBlock Classes="pixelText"
+                               FontSize="18"
+                               TextAlignment="Center"
+                               Text="{Binding InterruptedMessage}">
+                        <TextBlock.Effect>
+                            <DropShadowEffect OffsetX="3" OffsetY="3" BlurRadius="0" Color="Black" Opacity="1" />
+                        </TextBlock.Effect>
+                    </TextBlock>
+                    <Button Classes="pixelButton dialogButton cancel"
+                            HorizontalAlignment="Center"
+                            Content="Regresar al menú"
+                            Command="{Binding BackToMenuCommand}" />
+                </StackPanel>
+            </Border>
+        </Panel>
         <!-- Pantalla de victoria: con el nombre del ganador y dos opciones -->
         <Panel IsVisible="{Binding IsVictoryScreenOpen}" Background="#CC000000">
             <Border Background="#3A2213"

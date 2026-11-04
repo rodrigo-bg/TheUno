@@ -120,6 +120,14 @@ public partial class BoardViewModel : ViewModelBase
     [ObservableProperty]
     private string _gameDurationText = string.Empty;
 
+    /// <summary>Muestra el aviso de que la partida se interrumpió y solo queda regresar al menú.</summary>
+    [ObservableProperty]
+    private bool _isInterruptedNoticeOpen;
+
+    /// <summary>Por qué se interrumpió, por ejemplo "RODRIGO se salió de la partida".</summary>
+    [ObservableProperty]
+    private string _interruptedMessage = string.Empty;
+
     /// <summary>Recibe la partida del servidor con su primera mesa ya lista.</summary>
     public BoardViewModel(IGameSession session, Action goToMenu, Action startNewGame)
         : this(session, session.State ?? throw new ArgumentException("La partida todavía no tiene mesa.", nameof(session)),
@@ -161,6 +169,8 @@ public partial class BoardViewModel : ViewModelBase
             session.UnoWindowOpened += OnUnoWindowOpened;
             session.UnoPenalty += OnUnoPenalty;
             session.GameOver += OnGameOver;
+            session.PlayerLeft += OnPlayerLeft;
+            session.ConnectionLost += OnConnectionLost;
         }
     }
 
@@ -403,6 +413,33 @@ public partial class BoardViewModel : ViewModelBase
         IsExitDialogOpen = false;
         await LeaveAsync();
         _goToMenu();
+    }
+
+    private void OnPlayerLeft(string playerName)
+    {
+        if (playerName != Player1.Name) ShowInterrupted($"{playerName} se salió de la partida");
+    }
+
+    private void OnConnectionLost() => ShowInterrupted("Se perdió la conexión con el servidor");
+
+    /// <summary>
+    /// La partida ya no puede seguir: se bloquea la mesa y solo queda regresar al menú.
+    /// Si ya había terminado no se avisa nada, porque la pantalla final ya está en camino.
+    /// </summary>
+    private void ShowInterrupted(string message)
+    {
+        if (_isGameOver) return;
+        _isGameOver = true;
+
+        CloseUnoWindow();
+        CanDraw = false;
+        CanPassTurn = false;
+        DrawCardCommand.NotifyCanExecuteChanged();
+        IsColorPickerOpen = false;
+        IsExitDialogOpen = false;
+
+        InterruptedMessage = message;
+        IsInterruptedNoticeOpen = true;
     }
 
     private async Task LeaveAsync()

@@ -26,6 +26,9 @@ public partial class LobbyViewModel : ViewModelBase
     // Pasa al tablero con el nombre del jugador de esta compu
     private readonly Action<string> _onGameStarted;
 
+    // La sesión cuya conexión se está vigilando mientras se espera en la sala
+    private IGameSession? _watchedSession;
+
     /// <summary>Se está esperando al servidor: los botones no responden para no mandar dos veces.</summary>
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(ConnectCommand))]
@@ -131,6 +134,7 @@ public partial class LobbyViewModel : ViewModelBase
             if (_lobby is null) throw new InvalidOperationException("No hay servidor.");
 
             await _lobby.ConnectAsync(ServerIp.Trim());
+            WatchConnection();
             IsConnected = true;
             ShowStatus("¡Conexión exitosa!", isError: false);
         }
@@ -159,7 +163,11 @@ public partial class LobbyViewModel : ViewModelBase
             if (_lobby is not null)
             {
                 // Quien crea la partida la abre al elegir su jugador, así ya tiene nombre al entrar a la sala
-                if (IsHost) await _lobby.CreateGameAsync();
+                if (IsHost)
+                {
+                    await _lobby.CreateGameAsync();
+                    WatchConnection();
+                }
 
                 if (!await _lobby.ChoosePlayerAsync(option.Name))
                 {
@@ -185,6 +193,33 @@ public partial class LobbyViewModel : ViewModelBase
     }
 
     private bool CanChoosePlayer(PlayerOption? option) => !IsBusy;
+
+    // ---------- Conexión ----------
+
+    /// <summary>Escucha la conexión de la sesión actual. Cambia si se vuelve a conectar.</summary>
+    private void WatchConnection()
+    {
+        if (_watchedSession == Session) return;
+
+        if (_watchedSession is not null) _watchedSession.ConnectionLost -= OnConnectionLost;
+        _watchedSession = Session;
+        if (_watchedSession is not null) _watchedSession.ConnectionLost += OnConnectionLost;
+    }
+
+    /// <summary>Se cayó el servidor antes de empezar: se regresa al paso de conectarse o elegir jugador.</summary>
+    private void OnConnectionLost()
+    {
+        IsInRoom = false;
+        IsConnected = false;
+        MyPlayerName = null;
+
+        foreach (var option in PlayerOptions)
+        {
+            option.IsTaken = false;
+        }
+
+        ShowStatus("Se perdió la conexión con el servidor", isError: true);
+    }
 
     // ---------- Sala de conexión ----------
 
@@ -272,6 +307,7 @@ public partial class LobbyViewModel : ViewModelBase
 
         _lobby.PlayersChanged -= OnPlayersChanged;
         _lobby.GameStarted -= OnGameStarted;
+        if (_watchedSession is not null) _watchedSession.ConnectionLost -= OnConnectionLost;
     }
 
     private void ShowStatus(string message, bool isError)
