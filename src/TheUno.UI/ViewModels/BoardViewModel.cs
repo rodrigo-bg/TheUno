@@ -1,55 +1,46 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 using Avalonia.Media;
 using Avalonia.Media.Imaging;
 using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using TheUno.Core.Contracts;
-using TheUno.Core.Engine;
-using TheUno.Core.Events;
 using TheUno.Core.Models;
 using TheUno.UI.Services;
 
 namespace TheUno.UI.ViewModels;
 
 /// <summary>
-/// Estado visual de la mesa. La partida la lleva el motor de juego de TheUno.Core:
-/// este ViewModel solo refleja su estado y escucha sus eventos.
+/// Estado visual de la mesa. La partida vive en el servidor: este ViewModel no conoce las reglas,
+/// solo dibuja el estado que le mandan. Abajo siempre está el jugador de esta compu.
 /// </summary>
 public partial class BoardViewModel : ViewModelBase
 {
-    // Tiempo para cantar UNO después de tirar la penúltima carta
-    private static readonly TimeSpan UnoWindow = TimeSpan.FromSeconds(2);
-
     // Tiempo que se ve el aviso de penalización por no cantar UNO
     private static readonly TimeSpan PenaltyNoticeDuration = TimeSpan.FromSeconds(2.5);
 
-    // Motor de juego: lo crea MainWindowViewModel y se recibe en el constructor
-    private readonly IGameEngine _engine;
+    // La partida del servidor. Solo es null en el diseñador de Rider/Avalonia
+    private readonly IGameSession? _session;
 
     // Navegación: las pone MainWindowViewModel
     private readonly Action _goToMenu;
     private readonly Action _startNewGame;
-
-    // Avisa que un jugador cantó UNO, con el número de turno, para guardarlo en el log
-    private readonly Action<Player, int>? _onUnoCalled;
-
-    // Número de turno igual al que usa el motor en su log: empieza en 1 y sube en cada cambio de turno
-    private int _turnNumber;
-
-    // Turno en que el jugador de la ventana de UNO tiró su penúltima carta
-    private int _unoTurnNumber;
 
     // Qué hacer con el color elegido (tirar el comodín con ese color).
     private Action<CardColor>? _onColorChosen;
 
     private bool _isGameOver;
 
-    // Ventana para cantar UNO: quién puede cantar, cuándo se acaba y el cambio de turno que espera.
-    private PlayerViewModel? _unoPlayer;
+    // Ventana para cantar UNO: cuánto dura, cuándo se acaba y su temporizador. El turno lo detiene el servidor.
+    private TimeSpan _unoWindow;
     private DateTime _unoDeadline;
     private DispatcherTimer? _unoTimer;
-    private TurnChangedEventArgs? _pendingTurnChange;
+
+    // Lo último que se vio en la mesa, para saber cuándo se tiró o se robó una carta
+    private Guid _lastTopCardId;
+    private int _lastCardTotal;
 
     // Cuenta los avisos de penalización: si sale otro antes de que se oculte el primero,
     // el temporizador del primero ya no lo oculta.
@@ -75,12 +66,16 @@ public partial class BoardViewModel : ViewModelBase
     [ObservableProperty]
     private CardViewModel _topDiscardCard;
 
+    /// <summary>Es el turno de esta compu y todavía no ha robado.</summary>
+    [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(DrawCardCommand))]
+    private bool _canDraw;
+
     /// <summary>
     /// El jugador en turno ya robó y la carta robada se puede tirar: puede tirarla o pasar.
     /// Mientras tanto no puede volver a robar.
     /// </summary>
     [ObservableProperty]
-    [NotifyCanExecuteChangedFor(nameof(DrawCardCommand))]
     [NotifyCanExecuteChangedFor(nameof(PassTurnCommand))]
     private bool _canPassTurn;
 
@@ -106,7 +101,7 @@ public partial class BoardViewModel : ViewModelBase
     [ObservableProperty]
     private bool _isExitDialogOpen;
 
-    /// <summary>Muestra la pantalla de victoria (aparece 3 segundos después de que alguien gana).</summary>
+    /// <summary>Muestra la pantalla de victoria (aparece poco después de que alguien gana).</summary>
     [ObservableProperty]
     private bool _isVictoryScreenOpen;
 
@@ -125,51 +120,67 @@ public partial class BoardViewModel : ViewModelBase
     [ObservableProperty]
     private string _gameDurationText = string.Empty;
 
-    /// <summary>
-    /// Recibe el motor ya iniciado (con las cartas repartidas y la primera carta volteada).
-    /// </summary>
-    public BoardViewModel(IGameEngine engine, Action goToMenu, Action startNewGame,
-        Action<Player, int>? onUnoCalled = null)
+    /// <summary>Recibe la partida del servidor con su primera mesa ya lista.</summary>
+    public BoardViewModel(IGameSession session, Action goToMenu, Action startNewGame)
+        : this(session, session.State ?? throw new ArgumentException("La partida todavía no tiene mesa.", nameof(session)),
+            goToMenu, startNewGame)
     {
-        _engine = engine;
-        _goToMenu = goToMenu;
-        _startNewGame = startNewGame;
-        _onUnoCalled = onUnoCalled;
-
-        // Si la primera carta es Salto o +2, el motor ya avanzó un turno al iniciar
-        _turnNumber = _engine.TopCard.Type is CardType.Skip or CardType.DrawTwo ? 2 : 1;
-
-        Player1 = new PlayerViewModel(_engine.Players[0]);
-        Player2 = new PlayerViewModel(_engine.Players[1]);
-        Player3 = new PlayerViewModel(_engine.Players[2]);
-
-        // Estado inicial de la mesa. Puede no empezar el Jugador 1: si la primera carta
-        // es Salto o +2, el motor ya le pasó el turno al siguiente.
-        _topDiscardCard = new CardViewModel(_engine.TopCard);
-        _activeColor = _engine.ActiveColor;
-        _isClockwise = _engine.Direction == 1;
-        _activePlayer = GetPlayerViewModel(_engine.CurrentPlayer);
-        _activePlayer.IsActive = true;
-        UpdatePlayableCards();
-
-        // Se escucha al final porque los PlayerViewModel tienen que existir antes.
-        _engine.OnTurnChanged += OnTurnChanged;
-        _engine.OnCardPlayed += OnCardPlayed;
-        _engine.OnCardDrawn += OnCardDrawn;
-        _engine.OnGameOver += OnGameOver;
-        _engine.OnUnoPenalty += OnUnoPenalty;
     }
 
     /// <summary>Constructor para el diseñador de Rider/Avalonia.</summary>
-    public BoardViewModel() : this(CreateDesignEngine(), () => { }, () => { })
+    public BoardViewModel() : this(null, CreateDesignState(), () => { }, () => { })
     {
     }
 
-    private static IGameEngine CreateDesignEngine()
+    private BoardViewModel(IGameSession? session, GameStateDto state, Action goToMenu, Action startNewGame)
     {
-        var engine = new GameEngine();
-        engine.StartGame(new[] { "Jugador 1", "Jugador 2", "Jugador 3" });
-        return engine;
+        _session = session;
+        _goToMenu = goToMenu;
+        _startNewGame = startNewGame;
+
+        // Los jugadores llegan en el orden de los turnos: se gira la lista para que esta compu quede abajo
+        var mySeat = state.Players.FindIndex(p => p.Name == state.MyName);
+        var names = Enumerable.Range(0, state.Players.Count)
+            .Select(i => state.Players[(mySeat + i) % state.Players.Count].Name)
+            .ToList();
+        Player1 = new PlayerViewModel(names[0]);
+        Player2 = new PlayerViewModel(names[1]);
+        Player3 = new PlayerViewModel(names[2]);
+
+        _topDiscardCard = new CardViewModel(state.TopCard.ToCard());
+        _activePlayer = GetPlayerViewModel(state.CurrentPlayerName);
+        _activePlayer.IsActive = true;
+        _lastTopCardId = state.TopCard.Id;
+        _lastCardTotal = state.Players.Sum(p => p.CardCount);
+        ApplyState(state);
+
+        // Se escucha al final porque los PlayerViewModel tienen que existir antes.
+        if (session is not null)
+        {
+            session.StateChanged += ApplyState;
+            session.UnoWindowOpened += OnUnoWindowOpened;
+            session.UnoPenalty += OnUnoPenalty;
+            session.GameOver += OnGameOver;
+        }
+    }
+
+    private static GameStateDto CreateDesignState()
+    {
+        var hand = new List<CardDto>
+        {
+            new(Guid.NewGuid(), CardColor.Red, CardType.Number, 7),
+            new(Guid.NewGuid(), CardColor.Blue, CardType.Skip, null),
+            new(Guid.NewGuid(), CardColor.None, CardType.Wild, null)
+        };
+        var players = new List<PlayerStateDto>
+        {
+            new("Jugador 1", hand.Count, false),
+            new("Jugador 2", 7, false),
+            new("Jugador 3", 7, false)
+        };
+
+        return new GameStateDto("Jugador 1", hand, new List<Guid>(), players, "Jugador 1",
+            new CardDto(Guid.NewGuid(), CardColor.Red, CardType.Number, 3), CardColor.Red, 1, true, false);
     }
 
     public PlayerViewModel Player1 { get; }
@@ -200,133 +211,77 @@ public partial class BoardViewModel : ViewModelBase
         newValue.IsActive = true;
     }
 
-    /// <summary>
-    /// El motor cambió de turno. Si el jugador anterior tiene abierta su ventana para cantar UNO,
-    /// el cambio se guarda y se muestra hasta que cante o se acabe el tiempo.
-    /// </summary>
-    private void OnTurnChanged(TurnChangedEventArgs e)
+    /// <summary>Dibuja la mesa tal como la mandó el servidor.</summary>
+    private void ApplyState(GameStateDto state)
     {
-        _turnNumber++;
+        PlayCardSoundIfNeeded(state);
 
-        if (_unoPlayer is not null)
+        Player1.SyncHand(state.MyHand.Select(c => c.ToCard()).ToList(), state.PlayableCardIds);
+
+        foreach (var player in state.Players)
         {
-            _pendingTurnChange = e;
-            // El motor ya avanzó: ninguna carta queda jugable hasta mostrar el nuevo turno.
-            UpdatePlayableCards();
-            return;
+            var viewModel = GetPlayerViewModel(player.Name);
+            viewModel.CardCount = player.CardCount;
+            viewModel.HasCalledUno = player.HasCalledUno && player.CardCount == 1;
         }
 
-        ApplyTurnChange(e);
+        if (TopDiscardCard.Card.Id != state.TopCard.Id) TopDiscardCard = new CardViewModel(state.TopCard.ToCard());
+        ActiveColor = state.ActiveColor;
+        IsClockwise = state.Direction == 1;
+        ActivePlayer = GetPlayerViewModel(state.CurrentPlayerName);
+        CanDraw = state.CanDraw;
+        CanPassTurn = state.CanPass;
     }
 
-    /// <summary>Refresca toda la mesa con el estado del motor después de un cambio de turno.</summary>
-    private void ApplyTurnChange(TurnChangedEventArgs e)
+    /// <summary>Suena la carta si cambió la de arriba o alguien recibió cartas (robar, +2, +4, penalización).</summary>
+    private void PlayCardSoundIfNeeded(GameStateDto state)
     {
-        Player1.SyncHand();
-        Player2.SyncHand();
-        Player3.SyncHand();
+        var cardTotal = state.Players.Sum(p => p.CardCount);
+        if (state.TopCard.Id != _lastTopCardId || cardTotal > _lastCardTotal)
+        {
+            App.Sounds.Play(SoundEffects.CardSound);
+        }
 
-        if (TopDiscardCard.Card != e.TopCard) TopDiscardCard = new CardViewModel(e.TopCard);
-        ActiveColor = e.ActiveColor;
-        IsClockwise = e.Direction == 1;
-        ActivePlayer = GetPlayerViewModel(e.CurrentPlayer);
-        CanPassTurn = false;
-        UpdatePlayableCards();
+        _lastTopCardId = state.TopCard.Id;
+        _lastCardTotal = cardTotal;
     }
 
-    private PlayerViewModel GetPlayerViewModel(Player player)
+    private PlayerViewModel GetPlayerViewModel(string name)
     {
-        if (player == Player1.Model) return Player1;
-        if (player == Player2.Model) return Player2;
+        if (name == Player1.Name) return Player1;
+        if (name == Player2.Name) return Player2;
         return Player3;
-    }
-
-    /// <summary>
-    /// Marca las cartas que el motor permite tirar. Solo pueden ser del jugador en turno;
-    /// después de robar, solo la carta robada.
-    /// </summary>
-    private void UpdatePlayableCards()
-    {
-        foreach (var player in new[] { Player1, Player2, Player3 })
-        {
-            foreach (var card in player.Hand)
-            {
-                card.IsPlayable = _engine.CanPlayCard(card.Card);
-            }
-        }
     }
 
     // ---------- Tirar carta ----------
 
     /// <summary>
-    /// El jugador en turno tira una carta. Si el motor no la permite, no pasa nada.
-    /// Un comodín o +4 primero abre el selector de color, porque el motor pide el color al tirarlo.
+    /// El jugador en turno tira una carta. Un comodín o +4 primero abre el selector de color,
+    /// porque el color se manda junto con la carta.
     /// </summary>
     [RelayCommand]
     private void PlayCard(CardViewModel card)
     {
-        if (!_engine.CanPlayCard(card.Card)) return;
+        if (!card.IsPlayable) return;
 
         if (card.Card.Type is CardType.Wild or CardType.WildDrawFour)
         {
-            AskForColor(color => _engine.PlayCard(card.Card, color));
-            return;
-        }
-
-        _engine.PlayCard(card.Card);
-    }
-
-    /// <summary>
-    /// Se refleja la carta tirada en la mesa. Normalmente después llega el cambio de turno,
-    /// pero si era la última carta del jugador la partida termina y ya no hay cambio de turno.
-    /// Si era la penúltima, se abre su ventana para cantar UNO.
-    /// </summary>
-    private void OnCardPlayed(CardPlayedEventArgs e)
-    {
-        App.Sounds.Play(SoundEffects.CardSound);
-
-        var player = GetPlayerViewModel(e.Player);
-        player.SyncHand();
-        TopDiscardCard = new CardViewModel(e.Card);
-        ActiveColor = e.ActiveColor;
-        UpdatePlayableCards();
-
-        if (e.Player.Hand.Count == 1 && !e.Player.HasDeclaredUno)
-        {
-            // El cambio de turno todavía no llega: este es el turno en que tiró la carta
-            _unoTurnNumber = _turnNumber;
-            OpenUnoWindow(player);
+            AskForColor();
         }
     }
 
     // ---------- Robar y pasar ----------
 
-    /// <summary>
-    /// El jugador en turno roba una carta del mazo. Si no se puede tirar, el motor pasa el turno solo;
-    /// si se puede, el jugador sigue en turno y elige entre tirarla o pasar.
-    /// </summary>
     [RelayCommand(CanExecute = nameof(CanDrawCard))]
     private void DrawCard()
     {
-        var drawingPlayer = _engine.CurrentPlayer;
-        _engine.DrawCard();
-        CanPassTurn = _engine.CurrentPlayer == drawingPlayer;
-        UpdatePlayableCards();
     }
 
-    private bool CanDrawCard() => !CanPassTurn && !_isGameOver && _unoPlayer is null;
+    private bool CanDrawCard() => CanDraw && !_isGameOver;
 
     [RelayCommand(CanExecute = nameof(CanPassTurn))]
-    private void PassTurn() => _engine.PassTurn();
-
-    /// <summary>
-    /// Aparece la carta robada en la mano de quien la recibió (también las de un +2 o +4,
-    /// o las de la penalización por no cantar UNO).
-    /// </summary>
-    private void OnCardDrawn(CardDrawnEventArgs e)
+    private void PassTurn()
     {
-        App.Sounds.Play(SoundEffects.CardSound);
-        GetPlayerViewModel(e.Player).SyncHand();
     }
 
     // ---------- Selector de color ----------
@@ -344,7 +299,6 @@ public partial class BoardViewModel : ViewModelBase
     private void ChooseColor(CardColor color)
     {
         IsColorPickerOpen = false;
-        ActiveColor = color;
 
         var onChosen = _onColorChosen;
         _onColorChosen = null;
@@ -354,16 +308,17 @@ public partial class BoardViewModel : ViewModelBase
     // ---------- UNO ----------
 
     /// <summary>
-    /// Después de tirar su penúltima carta, el jugador tiene 2 segundos para picar ¡UNO!.
-    /// Mientras tanto se ve una barra que se vacía y el turno del siguiente todavía no se muestra.
+    /// Un jugador tiró su penúltima carta. Si fue el de esta compu, tiene unos segundos para picar ¡UNO!
+    /// y se ve una barra que se vacía. El servidor lleva el tiempo y detiene el turno del siguiente.
     /// </summary>
-    private void OpenUnoWindow(PlayerViewModel player)
+    private void OnUnoWindowOpened(string playerName, int milliseconds)
     {
-        _unoPlayer = player;
-        _unoDeadline = DateTime.UtcNow + UnoWindow;
+        if (playerName != Player1.Name) return;
+
+        _unoWindow = TimeSpan.FromMilliseconds(milliseconds);
+        _unoDeadline = DateTime.UtcNow + _unoWindow;
         UnoTimeLeft = 1;
-        player.ShowUnoButton = true;
-        DrawCardCommand.NotifyCanExecuteChanged();
+        Player1.ShowUnoButton = true;
 
         _unoTimer = new DispatcherTimer(TimeSpan.FromMilliseconds(30), DispatcherPriority.Normal, OnUnoTimerTick);
         _unoTimer.Start();
@@ -371,7 +326,7 @@ public partial class BoardViewModel : ViewModelBase
 
     private void OnUnoTimerTick(object? sender, EventArgs e)
     {
-        var left = (_unoDeadline - DateTime.UtcNow) / UnoWindow;
+        var left = (_unoDeadline - DateTime.UtcNow) / _unoWindow;
         if (left <= 0)
         {
             CloseUnoWindow();
@@ -381,48 +336,26 @@ public partial class BoardViewModel : ViewModelBase
         UnoTimeLeft = left;
     }
 
-    /// <summary>Se acabó el tiempo o ya cantó: se quita el botón y se muestra el turno del siguiente.</summary>
+    /// <summary>Se acabó el tiempo o ya cantó: se quita el botón.</summary>
     private void CloseUnoWindow()
     {
         _unoTimer?.Stop();
         _unoTimer = null;
         UnoTimeLeft = 0;
-
-        if (_unoPlayer is not null) _unoPlayer.ShowUnoButton = false;
-        _unoPlayer = null;
-        DrawCardCommand.NotifyCanExecuteChanged();
-
-        if (_pendingTurnChange is { } pending)
-        {
-            _pendingTurnChange = null;
-            ApplyTurnChange(pending);
-        }
+        Player1.ShowUnoButton = false;
     }
 
-    /// <summary>El jugador dueño del botón ¡UNO! canta UNO: el turno pasa en ese momento.</summary>
+    /// <summary>El jugador de esta compu pica ¡UNO!.</summary>
     [RelayCommand]
-    private void CallUno(PlayerViewModel player)
-    {
-        player.HasCalledUno = true;
-
-        // Cuando aparece el botón el motor ya le pasó el turno al siguiente, así que no sirve
-        // CallUno() del motor (solo marca al jugador en turno). Se marca directo al jugador
-        // del Core: el motor revisa esta propiedad antes de castigar con +2.
-        player.Model.HasDeclaredUno = true;
-
-        // Por lo mismo, el motor no registra el UNO en el log: se avisa para guardarlo aparte
-        _onUnoCalled?.Invoke(player.Model, _unoTurnNumber);
-
-        if (player == _unoPlayer) CloseUnoWindow();
-    }
+    private void CallUno(PlayerViewModel player) => CloseUnoWindow();
 
     /// <summary>
-    /// El motor castigó a un jugador con 2 cartas por no cantar UNO. Las cartas ya llegaron
-    /// a su mano (OnCardDrawn); aquí solo se muestra el aviso unos segundos.
+    /// Un jugador recibió 2 cartas por no cantar UNO. Las cartas llegan con el siguiente estado;
+    /// aquí solo se muestra el aviso unos segundos.
     /// </summary>
-    private void OnUnoPenalty(Player player)
+    private void OnUnoPenalty(string playerName)
     {
-        PenaltyMessage = $"¡{player.Name.ToUpperInvariant()} NO CANTÓ UNO! +2";
+        PenaltyMessage = $"¡{playerName.ToUpperInvariant()} NO CANTÓ UNO! +2";
         IsPenaltyNoticeOpen = true;
 
         var notice = ++_penaltyNoticeCount;
@@ -441,19 +374,32 @@ public partial class BoardViewModel : ViewModelBase
     private void CancelExit() => IsExitDialogOpen = false;
 
     [RelayCommand]
-    private void ConfirmExit()
+    private async Task ConfirmExitAsync()
     {
         IsExitDialogOpen = false;
+        await LeaveAsync();
         _goToMenu();
+    }
+
+    private async Task LeaveAsync()
+    {
+        try
+        {
+            if (_session is not null) await _session.LeaveAsync();
+        }
+        catch (Exception)
+        {
+            // Si el servidor ya no está, igual se sale de la partida
+        }
     }
 
     // ---------- Victoria ----------
 
-    /// <summary>El motor avisa que alguien se quedó sin cartas, con la duración de la partida.</summary>
-    private void OnGameOver(GameOverEventArgs e)
+    /// <summary>El servidor avisa que alguien se quedó sin cartas, con la duración de la partida.</summary>
+    private void OnGameOver(string winnerName, TimeSpan duration)
     {
-        GameDurationText = $"{(int)e.Duration.TotalMinutes}:{e.Duration.Seconds:00}";
-        ShowVictory(GetPlayerViewModel(e.Winner));
+        GameDurationText = $"{(int)duration.TotalMinutes}:{duration.Seconds:00}";
+        ShowVictory(GetPlayerViewModel(winnerName));
     }
 
     /// <summary>
@@ -468,8 +414,8 @@ public partial class BoardViewModel : ViewModelBase
         _isGameOver = true;
 
         CanPassTurn = false;
+        CanDraw = false;
         DrawCardCommand.NotifyCanExecuteChanged();
-        UpdatePlayableCards();
 
         // El jugador de esta compu siempre está abajo (Player1)
         var iWon = winner == Player1;
@@ -487,8 +433,16 @@ public partial class BoardViewModel : ViewModelBase
     }
 
     [RelayCommand]
-    private void BackToMenu() => _goToMenu();
+    private async Task BackToMenuAsync()
+    {
+        await LeaveAsync();
+        _goToMenu();
+    }
 
     [RelayCommand]
-    private void PlayAgain() => _startNewGame();
+    private async Task PlayAgainAsync()
+    {
+        await LeaveAsync();
+        _startNewGame();
+    }
 }
