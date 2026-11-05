@@ -30,15 +30,30 @@ public static class NetworkInfo
             // Sin ruta hacia afuera: se busca a mano entre las tarjetas de red
         }
 
-        // Tarjetas encendidas con puerta de enlace (las virtuales normalmente no tienen)
-        return NetworkInterface.GetAllNetworkInterfaces()
+        var activeInterfaces = NetworkInterface.GetAllNetworkInterfaces()
             .Where(n => n.OperationalStatus == OperationalStatus.Up &&
                         n.NetworkInterfaceType != NetworkInterfaceType.Loopback)
+            .ToList();
+
+        // 1. Preferir tarjetas con puerta de enlace (Wi-Fi o red con router)
+        var ipWithGateway = activeInterfaces
             .Select(n => n.GetIPProperties())
             .Where(p => p.GatewayAddresses.Any(g => !g.Address.Equals(IPAddress.Any)))
             .SelectMany(p => p.UnicastAddresses)
             .Select(a => a.Address)
-            .FirstOrDefault(a => a.AddressFamily == AddressFamily.InterNetwork)
+            .FirstOrDefault(a => a.AddressFamily == AddressFamily.InterNetwork);
+
+        if (ipWithGateway is not null)
+        {
+            return ipWithGateway.ToString();
+        }
+
+        // 2. Respaldo para conexión directa por cable Ethernet sin router (puerta de enlace vacía)
+        return activeInterfaces
+            .Where(n => n.NetworkInterfaceType is NetworkInterfaceType.Ethernet or NetworkInterfaceType.Wireless80211 or NetworkInterfaceType.GigabitEthernet)
+            .SelectMany(n => n.GetIPProperties().UnicastAddresses)
+            .Select(a => a.Address)
+            .FirstOrDefault(a => a.AddressFamily == AddressFamily.InterNetwork && !IPAddress.IsLoopback(a))
             ?.ToString();
     }
 }
