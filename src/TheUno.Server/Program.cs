@@ -7,8 +7,8 @@ using TheUno.Server.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Configurar Kestrel para escuchar en todas las interfaces de red en el puerto 5000 (LAN)
-builder.WebHost.UseUrls("http://0.0.0.0:5000");
+// Kestrel escucha en todas las interfaces de red (LAN). Puerto 5050: en macOS el 5000 lo ocupa AirPlay.
+builder.WebHost.UseUrls(builder.Configuration["ServerUrl"] ?? "http://0.0.0.0:5050");
 
 // Soporte de CORS para conexiones entrantes
 builder.Services.AddCors(options =>
