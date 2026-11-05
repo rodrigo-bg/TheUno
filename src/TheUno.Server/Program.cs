@@ -71,3 +71,6 @@ app.MapGet("/", () => Results.Ok(new
 }));
 
 app.Run();
+
+// Expuesto para las pruebas de integración (WebApplicationFactory)
+public partial class Program;
