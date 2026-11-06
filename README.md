@@ -19,14 +19,14 @@ Se necesitan **dos terminales**: una para la API (base de datos) y otra para el 
 ```bash
 cd src/TheUno.Infrastructure/Api
 python -m pip install -r requirements.txt
-python -m uvicorn api:app --port 8000
+python -m uvicorn api:app --host 0.0.0.0 --port 8000
 ```
 
 **macOS:**
 ```bash
 cd src/TheUno.Infrastructure/Api
 python3 -m pip install -r requirements.txt
-python3 -m uvicorn api:app --port 8000
+python3 -m uvicorn api:app --host 0.0.0.0 --port 8000
 ```
 
 - El `pip install` descarga las bibliotecas de Python (`fastapi`, `uvicorn`, `pydantic`). Solo hace falta la primera vez.
