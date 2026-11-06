@@ -54,6 +54,9 @@ public sealed class SoundEffects : IDisposable
         _volume = volume / 100f;
     }
 
+    /// <summary>Con silencio los sonidos no se tocan; los que ya estaban sonando terminan solos.</summary>
+    public bool IsMuted { get; set; }
+
     /// <summary>
     /// Toca el sonido una vez. Si el sistema no puede reproducir audio, no pasa nada.
     /// onFinished se llama en el hilo de la interfaz cuando el sonido termina (o de inmediato si no sonó),
@@ -64,7 +67,7 @@ public sealed class SoundEffects : IDisposable
         var finished = onFinished is null ? null : (Action)(() => Dispatcher.UIThread.Post(onFinished));
 
         var now = DateTime.UtcNow;
-        if (_failed || (_lastPlayed.TryGetValue(sound, out var last) && now - last < RepeatGap))
+        if (_failed || IsMuted || (_lastPlayed.TryGetValue(sound, out var last) && now - last < RepeatGap))
         {
             finished?.Invoke();
             return;

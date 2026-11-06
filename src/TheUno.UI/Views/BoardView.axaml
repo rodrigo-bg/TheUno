@@ -185,10 +185,6 @@
         <Style Selector="Border.playerZone.active ItemsControl.bottomHand > ContentPresenter:pointerover">
             <Setter Property="RenderTransform" Value="translate(0px, -14px)" />
         </Style>
-        <!-- Manos laterales: +X apunta al centro (la del Jugador 3 está girada 180°) -->
-        <Style Selector="Border.playerZone.active ItemsControl.sideHand > ContentPresenter:pointerover">
-            <Setter Property="RenderTransform" Value="translate(14px, 0px)" />
-        </Style>
 
         <!-- Tamaños de carta por zona -->
         <Style Selector="ItemsControl.bottomHand Border.card">
@@ -362,8 +358,10 @@
                         </Border>
                     </StackPanel>
                     <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+                        <!-- Los rivales se ven boca abajo y sus cartas no responden al mouse -->
                         <ItemsControl Classes="sideHand" ItemsSource="{Binding Player2.Hand}"
-                                      IsEnabled="{Binding Player2.IsActive}">
+                                      IsEnabled="{Binding Player2.IsActive}"
+                                      IsHitTestVisible="False">
                             <ItemsControl.ItemsPanel>
                                 <ItemsPanelTemplate>
                                     <StackPanel Orientation="Vertical" HorizontalAlignment="Center" Spacing="-30" />
@@ -392,10 +390,10 @@
                         </Border>
                     </StackPanel>
                     <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
-                        <!-- Girado 180° con cartas a 90°: cada carta queda orientada hacia el Jugador 3
-                             y la franja visible es la parte superior, donde está el número -->
+                        <!-- Girado 180° con cartas a 90°: cada carta queda orientada hacia el Jugador 3 -->
                         <ItemsControl Classes="sideHand" ItemsSource="{Binding Player3.Hand}"
                                       IsEnabled="{Binding Player3.IsActive}"
+                                      IsHitTestVisible="False"
                                       VerticalAlignment="Top"
                                       RenderTransform="rotate(180deg)">
                             <ItemsControl.ItemsPanel>
@@ -649,6 +647,31 @@
                                 Content="Sí, estoy seguro"
                                 Command="{Binding ConfirmExitCommand}" />
                     </StackPanel>
+                </StackPanel>
+            </Border>
+        </Panel>
+        <!-- Aviso de partida interrumpida: alguien se salió o se cayó el servidor -->
+        <Panel IsVisible="{Binding IsInterruptedNoticeOpen}" Background="#B3000000">
+            <Border Background="#3A2213"
+                    BorderBrush="Black"
+                    BorderThickness="6"
+                    Padding="48,40"
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Center"
+                    BoxShadow="10 10 0 0 #000000">
+                <StackPanel Spacing="40">
+                    <TextBlock Classes="pixelText"
+                               FontSize="18"
+                               TextAlignment="Center"
+                               Text="{Binding InterruptedMessage}">
+                        <TextBlock.Effect>
+                            <DropShadowEffect OffsetX="3" OffsetY="3" BlurRadius="0" Color="Black" Opacity="1" />
+                        </TextBlock.Effect>
+                    </TextBlock>
+                    <Button Classes="pixelButton dialogButton cancel"
+                            HorizontalAlignment="Center"
+                            Content="Regresar al menú"
+                            Command="{Binding BackToMenuCommand}" />
                 </StackPanel>
             </Border>
         </Panel>

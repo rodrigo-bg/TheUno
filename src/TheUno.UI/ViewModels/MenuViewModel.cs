@@ -17,16 +17,31 @@ public partial class MenuViewModel : ViewModelBase
     [ObservableProperty]
     private bool _isPlayOptionsOpen;
 
+    /// <summary>El juego está en silencio. Cambia la imagen del botón de sonido.</summary>
+    [ObservableProperty]
+    private bool _isMuted;
+
     public MenuViewModel(Action onCreateGame, Action onJoinGame, Action onShowHistory)
     {
         _onCreateGame = onCreateGame;
         _onJoinGame = onJoinGame;
         _onShowHistory = onShowHistory;
+
+        // Cada vez que se regresa al menú se crea uno nuevo: el silencio sigue como estaba
+        _isMuted = App.IsMuted;
     }
 
     /// <summary>Constructor para el diseñador de Rider/Avalonia.</summary>
     public MenuViewModel() : this(() => { }, () => { }, () => { })
     {
+    }
+
+    /// <summary>Quita o regresa el sonido de todo el juego.</summary>
+    [RelayCommand]
+    private void ToggleSound()
+    {
+        IsMuted = !IsMuted;
+        App.IsMuted = IsMuted;
     }
 
     [RelayCommand]
