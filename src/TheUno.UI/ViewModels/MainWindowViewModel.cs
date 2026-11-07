@@ -53,7 +53,7 @@ public partial class MainWindowViewModel : ViewModelBase
     private void ShowLobby(bool isHost, string? reconnectIp = null)
     {
         LobbyViewModel? lobby = null;
-        lobby = new LobbyViewModel(_createLobby?.Invoke(), isHost, ShowMenu,
+        lobby = new LobbyViewModel(_createLobby?.Invoke(), isHost, ShowPlayOptions,
             _ => StartGame(lobby!, () => ShowLobby(isHost, lobby!.ServerIp)), reconnectIp);
         CurrentView = lobby;
     }
@@ -78,5 +78,13 @@ public partial class MainWindowViewModel : ViewModelBase
     private void ShowMenu()
     {
         CurrentView = CreateMenu();
+    }
+
+    /// <summary>"Regresar" desde la sala vuelve a las opciones de crear o unirse, no al menú principal.</summary>
+    private void ShowPlayOptions()
+    {
+        var menu = CreateMenu();
+        menu.IsPlayOptionsOpen = true;
+        CurrentView = menu;
     }
 }

@@ -284,7 +284,7 @@
 
         <!-- Va al final para quedar encima del cuadro y recibir los clics -->
         <Button Classes="pixelButton backButton"
-                Content="← MENU"
+                Content="← REGRESAR"
                 Command="{Binding BackToMenuCommand}" />
     </Grid>
 </UserControl>
