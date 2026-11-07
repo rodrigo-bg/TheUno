@@ -61,11 +61,8 @@ public partial class App : Application
         {
             desktop.MainWindow = new MainWindow
             {
-                DataContext = new MainWindowViewModel(
-                    Music,
-                    Services.GetRequiredService<IMatchRepository>(),
-                    Services.GetRequiredService<IGameLogRepository>(),
-                    LobbyFactory)
+                // El historial crea sus propios repositorios con la IP del servidor (ver ServerAddress)
+                DataContext = new MainWindowViewModel(Music, LobbyFactory)
             };
 
             desktop.Exit += (_, _) =>
