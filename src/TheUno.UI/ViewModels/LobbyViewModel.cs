@@ -135,6 +135,7 @@ public partial class LobbyViewModel : ViewModelBase
 
             await _lobby.ConnectAsync(ServerIp.Trim());
             WatchConnection();
+            ServerAddress.Remember(ServerIp);
             IsConnected = true;
             ShowStatus("¡Conexión exitosa!", isError: false);
         }
@@ -167,6 +168,9 @@ public partial class LobbyViewModel : ViewModelBase
                 {
                     await _lobby.CreateGameAsync();
                     WatchConnection();
+
+                    // El servidor y la API corren en esta misma compu
+                    ServerAddress.Remember(ServerAddress.Local);
                 }
 
                 if (!await _lobby.ChoosePlayerAsync(option.Name))
