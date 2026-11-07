@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using TheUno.Core.Contracts;
+using TheUno.UI.Services;
 
 namespace TheUno.UI.ViewModels;
 
@@ -33,13 +34,17 @@ public record LogRow(string TurnText, string Text);
 /// Historial y estadísticas: tabla de clasificación con partidas jugadas, victorias,
 /// derrotas y porcentaje de victorias de cada jugador, la lista de partidas terminadas
 /// y la bitácora de movimientos de la partida elegida.
-/// Los datos se piden a la API; en el diseñador de Rider se usan datos de ejemplo.
+/// Los datos se piden a la API de la compu servidor; en el diseñador de Rider se usan datos de ejemplo.
 /// </summary>
 public partial class StatsViewModel : ViewModelBase
 {
     private readonly Action _goToMenu;
-    private readonly IMatchRepository? _matchRepository;
-    private readonly IGameLogRepository? _logRepository;
+
+    // Crean los repositorios con la IP de ServerAddress; se vuelven a pedir al cambiar de servidor
+    private readonly Func<IMatchRepository>? _createMatchRepository;
+    private readonly Func<IGameLogRepository>? _createLogRepository;
+    private IMatchRepository? _matchRepository;
+    private IGameLogRepository? _logRepository;
 
     // Nombre de cada jugador por su Id, para escribir la bitácora (los movimientos solo guardan el Id)
     private readonly Dictionary<Guid, string> _playerNames = new();
@@ -58,11 +63,19 @@ public partial class StatsViewModel : ViewModelBase
     [NotifyPropertyChangedFor(nameof(HasLogMessage))]
     private string _logMessage = "Elige una partida para ver sus movimientos";
 
-    public StatsViewModel(Action goToMenu, IMatchRepository matchRepository, IGameLogRepository logRepository)
+    /// <summary>IP de la compu servidor de la que se lee el historial; se puede cambiar y recargar.</summary>
+    [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(ChangeServerCommand))]
+    private string _serverHost = ServerAddress.Host;
+
+    public StatsViewModel(Action goToMenu,
+        Func<IMatchRepository> createMatchRepository, Func<IGameLogRepository> createLogRepository)
     {
         _goToMenu = goToMenu;
-        _matchRepository = matchRepository;
-        _logRepository = logRepository;
+        _createMatchRepository = createMatchRepository;
+        _createLogRepository = createLogRepository;
+        _matchRepository = createMatchRepository();
+        _logRepository = createLogRepository();
         _ = LoadFromRepositoryAsync();
     }
 
@@ -160,6 +173,30 @@ public partial class StatsViewModel : ViewModelBase
             LogMessage = string.Empty;
         }
     }
+
+    /// <summary>
+    /// Lee el historial de otra compu: se recuerda la IP escrita (también para la siguiente vez)
+    /// y se vuelve a cargar todo desde su API.
+    /// </summary>
+    [RelayCommand(CanExecute = nameof(CanChangeServer))]
+    private async Task ChangeServerAsync()
+    {
+        if (_createMatchRepository is null || _createLogRepository is null) return;
+
+        ServerAddress.Remember(ServerHost);
+        ServerHost = ServerAddress.Host;
+        _matchRepository = _createMatchRepository();
+        _logRepository = _createLogRepository();
+
+        SelectedMatch = null;
+        Rows.Clear();
+        Matches.Clear();
+        LogRows.Clear();
+        LogMessage = "Elige una partida para ver sus movimientos";
+        await LoadFromRepositoryAsync();
+    }
+
+    private bool CanChangeServer() => !string.IsNullOrWhiteSpace(ServerHost);
 
     partial void OnSelectedMatchChanged(MatchRow? value)
     {

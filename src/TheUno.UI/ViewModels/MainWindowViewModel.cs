@@ -23,12 +23,6 @@ public partial class MainWindowViewModel : ViewModelBase
     [ObservableProperty]
     private ViewModelBase _currentView;
 
-    /// <summary>
-    /// Se muestra "CARGANDO..." y se ignoran más clics.
-    /// </summary>
-    [ObservableProperty]
-    private bool _isLoading;
-
     public MainWindowViewModel(MusicPlayer music, Func<ILobbyService>? createLobby = null)
     {
         _music = music;
@@ -70,13 +64,13 @@ public partial class MainWindowViewModel : ViewModelBase
 
     /// <summary>
     /// El historial lee la API de la compu servidor (la de la última partida; sin partida, esta compu).
-    /// Se crea cada vez porque la IP puede haber cambiado desde la última vez.
+    /// Los repositorios se crean con la IP del momento, también cuando se cambia desde el historial.
     /// </summary>
     private void ShowHistory()
     {
         CurrentView = new StatsViewModel(ShowMenu,
-            new ApiMatchRepository(CreateApiClient()),
-            new ApiGameLogRepository(CreateApiClient()));
+            () => new ApiMatchRepository(CreateApiClient()),
+            () => new ApiGameLogRepository(CreateApiClient()));
     }
 
     private static HttpClient CreateApiClient() => new()

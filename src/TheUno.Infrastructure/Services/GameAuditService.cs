@@ -13,6 +13,9 @@ public class GameAuditService
     private IGameEngine? _engine;
     private Guid _matchId;
 
+    // Turno actual para la bitácora: empieza en 1 y sube con cada cambio de turno del motor
+    private int _turnNumber;
+
     public GameAuditService(IGameLogRepository logRepository, IMatchRepository matchRepository)
     {
         _logRepository = logRepository ?? throw new ArgumentNullException(nameof(logRepository));
@@ -27,9 +30,11 @@ public class GameAuditService
     {
         _engine = engine ?? throw new ArgumentNullException(nameof(engine));
         _matchId = matchId;
+        _turnNumber = 1;
 
         _engine.OnCardPlayed += HandleCardPlayed;
         _engine.OnCardDrawn += HandleCardDrawn;
+        _engine.OnTurnChanged += HandleTurnChanged;
         _engine.OnGameOver += HandleGameOver;
     }
 
@@ -39,6 +44,7 @@ public class GameAuditService
         {
             _engine.OnCardPlayed -= HandleCardPlayed;
             _engine.OnCardDrawn -= HandleCardDrawn;
+            _engine.OnTurnChanged -= HandleTurnChanged;
             _engine.OnGameOver -= HandleGameOver;
             _engine = null;
         }
@@ -48,11 +54,10 @@ public class GameAuditService
     {
         try
         {
-            var playerId = Guid.TryParse(e.Player.Name, out var id) ? id : Guid.Empty;
             var entry = new GameLogEntryDto(
                 _matchId,
-                0,
-                playerId,
+                _turnNumber,
+                e.Player.Id,
                 GameActionType.PlayCard,
                 $"{e.Card.Color}_{e.Card.Type}",
                 e.ActiveColor.ToString(),
@@ -71,11 +76,10 @@ public class GameAuditService
     {
         try
         {
-            var playerId = Guid.TryParse(e.Player.Name, out var id) ? id : Guid.Empty;
             var entry = new GameLogEntryDto(
                 _matchId,
-                0,
-                playerId,
+                _turnNumber,
+                e.Player.Id,
                 GameActionType.DrawCard,
                 $"{e.Card.Color}_{e.Card.Type}",
                 null,
@@ -89,12 +93,13 @@ public class GameAuditService
         }
     }
 
+    private void HandleTurnChanged(TurnChangedEventArgs e) => _turnNumber++;
+
     private async void HandleGameOver(GameOverEventArgs e)
     {
         try
         {
-            var winnerId = Guid.TryParse(e.Winner.Name, out var id) ? id : Guid.Empty;
-            await _matchRepository.CompleteMatchAsync(_matchId, winnerId, e.TotalTurns, e.Duration);
+            await _matchRepository.CompleteMatchAsync(_matchId, e.Winner.Id, e.TotalTurns, e.Duration);
         }
         catch (Exception ex)
         {
