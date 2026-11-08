@@ -7,6 +7,9 @@ using TheUno.Core.Models;
 
 namespace TheUno.UI.ViewModels;
 
+/// <summary>
+/// Un jugador en la mesa. El de esta compu tiene su mano real; los rivales solo cartas boca abajo.
+/// </summary>
 public partial class PlayerViewModel : ViewModelBase
 {
     /// <summary>Indica si es el turno de este jugador: su zona se resalta y su mano se habilita.</summary>

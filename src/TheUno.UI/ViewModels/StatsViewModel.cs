@@ -38,6 +38,10 @@ public record LogRow(string TurnText, string Text);
 /// </summary>
 public partial class StatsViewModel : ViewModelBase
 {
+    private const string ChooseMatchMessage = "Elige una partida para ver sus movimientos";
+    private const string LoadingMessage = "Cargando...";
+    private const string ApiErrorMessage = "No se pudo conectar con la API";
+
     private readonly Action _goToMenu;
 
     // Crean los repositorios con la IP de ServerAddress; se vuelven a pedir al cambiar de servidor
@@ -61,7 +65,7 @@ public partial class StatsViewModel : ViewModelBase
     /// <summary>Aviso en lugar de la bitácora: elegir partida, cargando, sin movimientos o sin conexión.</summary>
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(HasLogMessage))]
-    private string _logMessage = "Elige una partida para ver sus movimientos";
+    private string _logMessage = ChooseMatchMessage;
 
     /// <summary>IP de la compu servidor de la que se lee el historial; se puede cambiar y recargar.</summary>
     [ObservableProperty]
@@ -160,7 +164,7 @@ public partial class StatsViewModel : ViewModelBase
     {
         if (_matchRepository is null) return;
 
-        StatusMessage = "Cargando...";
+        StatusMessage = LoadingMessage;
         try
         {
             LoadStats(await _matchRepository.GetLeaderboardStatsAsync());
@@ -169,7 +173,7 @@ public partial class StatsViewModel : ViewModelBase
         }
         catch (Exception)
         {
-            StatusMessage = "No se pudo conectar con la API";
+            StatusMessage = ApiErrorMessage;
             LogMessage = string.Empty;
         }
     }
@@ -192,7 +196,7 @@ public partial class StatsViewModel : ViewModelBase
         Rows.Clear();
         Matches.Clear();
         LogRows.Clear();
-        LogMessage = "Elige una partida para ver sus movimientos";
+        LogMessage = ChooseMatchMessage;
         await LoadFromRepositoryAsync();
     }
 
@@ -208,7 +212,7 @@ public partial class StatsViewModel : ViewModelBase
         if (_logRepository is null) return;
 
         LogRows.Clear();
-        LogMessage = "Cargando...";
+        LogMessage = LoadingMessage;
         try
         {
             var logs = await _logRepository.GetLogsByMatchAsync(matchId);
@@ -217,7 +221,7 @@ public partial class StatsViewModel : ViewModelBase
         }
         catch (Exception)
         {
-            if (SelectedMatch?.MatchId == matchId) LogMessage = "No se pudo conectar con la API";
+            if (SelectedMatch?.MatchId == matchId) LogMessage = ApiErrorMessage;
         }
     }
 
