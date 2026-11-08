@@ -6,6 +6,7 @@ using System.Text.Json;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http.Connections;
 using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.AspNetCore.SignalR.Client;
 using Xunit;
 
@@ -27,7 +28,7 @@ public class GameHubIntegrationTests : IClassFixture<WebApplicationFactory<Progr
     [Fact]
     public async Task ThreeClients_PlayTogether_EachReceivesOnlyItsOwnHand()
     {
-        string[] names = { "RODRIGO", "TONATIUH", "ALEJANDRO" };
+        string[] names = { "Rodri", "Tona", "Alejandro" };
         var states = names.ToDictionary(n => n, _ => new BlockingCollection<JsonElement>());
         var clients = new List<HubConnection>();
 
@@ -39,13 +40,15 @@ public class GameHubIntegrationTests : IClassFixture<WebApplicationFactory<Progr
             clients.Add(client);
         }
 
-        // Sala: el host crea la partida y cada quien elige su jugador
+        // Sala: el host crea la partida y una segunda ventana no puede volver a crearla
         await clients[0].InvokeAsync("CreateGame");
+        await Assert.ThrowsAsync<HubException>(() => clients[1].InvokeAsync("CreateGame"));
+
         for (int i = 0; i < names.Length; i++)
         {
             Assert.True(await clients[i].InvokeAsync<bool>("ChoosePlayer", names[i]));
         }
-        Assert.False(await clients[1].InvokeAsync<bool>("ChoosePlayer", "RODRIGO"));
+        Assert.False(await clients[1].InvokeAsync<bool>("ChoosePlayer", "Rodri"));
 
         await clients[0].InvokeAsync("StartGame");
 

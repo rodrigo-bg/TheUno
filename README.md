@@ -32,9 +32,9 @@ python -m uvicorn api:app --host 0.0.0.0 --port 8000
 ```bash
 dotnet run --project src/TheUno.Server
 ```
-- Escucha en el puerto **5000**. Ahí vive el motor de juego: valida las reglas, reparte las cartas y guarda cada partida en la API.
+- Escucha en el puerto **5050**. Ahí vive el motor de juego: valida las reglas, reparte las cartas y guarda cada partida en la API.
 
-**Permitir las conexiones:** la primera vez, Windows (o macOS) pregunta si la API y el servidor pueden usar la red. Hay que **permitirlo** en redes privadas; si no, las otras compus no se pueden conectar. Se usan los puertos **5000** (juego) y **8000** (historial).
+**Permitir las conexiones:** la primera vez, Windows (o macOS) pregunta si la API y el servidor pueden usar la red. Hay que **permitirlo** en redes privadas; si no, las otras compus no se pueden conectar. Se usan los puertos **5050** (juego) y **8000** (historial).
 
 ### 2. En cada compu (también en la del servidor)
 
@@ -75,7 +75,7 @@ Una ventana crea la partida y las otras dos se unen con la IP `127.0.0.1`.
 
 | Problema | Qué revisar |
 |---|---|
-| "No se pudo conectar a esa IP" | Que la IP sea la que muestra **CREAR PARTIDA** en la compu servidor, que el servidor del juego esté abierto, que las compus estén en la misma red y que el firewall permita el puerto 5000. |
+| "No se pudo conectar a esa IP" | Que la IP sea la que muestra **CREAR PARTIDA** en la compu servidor, que el servidor del juego esté abierto, que las compus estén en la misma red y que el firewall permita el puerto 5050. |
 | "No se pudo conectar con el servidor" al crear la partida | El servidor del juego no está abierto en esa compu. |
 | "ERROR: Partida existente ya creada con la misma red IP" | Alguien ya creó la partida en ese servidor: hay que entrar con **UNIRSE A PARTIDA**. |
 | El historial dice "No se pudo conectar con la API" | Que la API esté abierta en la compu servidor con `--host 0.0.0.0`, que el firewall permita el puerto 8000 y que la IP de **SERVIDOR** sea la correcta. |

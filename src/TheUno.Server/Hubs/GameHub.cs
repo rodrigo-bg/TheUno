@@ -27,7 +27,11 @@ public class GameHub : Hub
 
     public Task CreateGame()
     {
-        _sessionManager.CreateGame(Context.ConnectionId);
+        if (!_sessionManager.TryCreateGame(Context.ConnectionId))
+        {
+            throw new HubException("Ya hay una partida creada en este servidor.");
+        }
+
         return Task.CompletedTask;
     }
 
@@ -105,6 +109,7 @@ public class GameHub : Hub
                 gameOverInfo.Value.WinnerName,
                 gameOverInfo.Value.DurationSeconds
             );
+            _sessionManager.ClearFinishedGame();
         }
     }
 

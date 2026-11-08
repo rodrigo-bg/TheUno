@@ -1,6 +1,5 @@
 using Microsoft.AspNetCore.SignalR;
-using TheUno.Core.Contracts;
-using TheUno.Infrastructure.Repositories;
+using TheUno.Infrastructure.Extensions;
 using TheUno.Server.Contracts;
 using TheUno.Server.Hubs;
 using TheUno.Server.Services;
@@ -25,18 +24,9 @@ builder.Services.AddCors(options =>
 // Soporte de SignalR para comunicación en tiempo real
 builder.Services.AddSignalR();
 
-// Inyección de dependencias para persistencia en FastAPI
+// Inyección de dependencias para persistencia en FastAPI usando la extensión de TheUno.Infrastructure
 var persistenceApiUrl = builder.Configuration["PersistenceApiUrl"] ?? "http://127.0.0.1:8000/";
-builder.Services.AddHttpClient<IMatchRepository, ApiMatchRepository>(client =>
-{
-    client.BaseAddress = new Uri(persistenceApiUrl);
-    client.Timeout = TimeSpan.FromSeconds(3);
-});
-builder.Services.AddHttpClient<IGameLogRepository, ApiGameLogRepository>(client =>
-{
-    client.BaseAddress = new Uri(persistenceApiUrl);
-    client.Timeout = TimeSpan.FromSeconds(3);
-});
+builder.Services.AddTheUnoInfrastructureHttpClients(persistenceApiUrl);
 
 // Registrar el gestor central de sesión como Singleton para mantener el GameEngine en memoria
 builder.Services.AddSingleton<GameSessionManager>();

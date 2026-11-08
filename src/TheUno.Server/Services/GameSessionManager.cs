@@ -20,19 +20,19 @@ public class GameSessionManager
 {
     public const int UnoWindowMilliseconds = 2000;
 
-    // Semilla oficial de jugadores sincronizada con los Ids de la base de datos SQLite
+    // Semilla oficial de jugadores sincronizada con los Ids y nombres de la base de datos SQLite y la UI
     private static readonly (Guid Id, string Name)[] SeedPlayers =
     {
-        (Guid.Parse("22222222-2222-2222-2222-222222222222"), "TONATIUH"),
-        (Guid.Parse("11111111-1111-1111-1111-111111111111"), "RODRIGO"),
-        (Guid.Parse("33333333-3333-3333-3333-333333333333"), "ALEJANDRO")
+        (Guid.Parse("11111111-1111-1111-1111-111111111111"), "Rodri"),
+        (Guid.Parse("22222222-2222-2222-2222-222222222222"), "Tona"),
+        (Guid.Parse("33333333-3333-3333-3333-333333333333"), "Alejandro")
     };
 
     private readonly object _syncLock = new object();
     private readonly IMatchRepository _matchRepository;
     private readonly IGameLogRepository _logRepository;
 
-    // Mapa de ConnectionId -> Nombre del jugador ("RODRIGO", "TONATIUH", "ALEJANDRO")
+    // Mapa de ConnectionId -> Nombre del jugador ("Rodri", "Tona", "Alejandro")
     private readonly Dictionary<string, string> _connectionToPlayer = new Dictionary<string, string>();
     private readonly List<string> _joinedPlayers = new List<string>();
     private string? _hostConnectionId;
@@ -69,21 +69,46 @@ public class GameSessionManager
     // GESTIÓN DE LA SALA DE ESPERA (LOBBY)
     // ==========================================
 
-    public void CreateGame(string connectionId)
+    public bool TryCreateGame(string connectionId)
     {
+        if (string.IsNullOrWhiteSpace(connectionId))
+        {
+            return false;
+        }
+
         lock (_syncLock)
         {
-            // Si había una partida previa en curso o terminada, se limpia el motor para abrir nueva sala
+            // Si hay una partida en curso, no se permite crear otra
+            if (_engine != null && !_isGameOver)
+            {
+                return false;
+            }
+
+            // Si otra computadora ya creó la sala de espera, se rechaza crear una segunda partida
+            if (_hostConnectionId != null && _hostConnectionId != connectionId)
+            {
+                return false;
+            }
+
+            // Si había una partida previa ya terminada, se limpia el estado para abrir nueva sala
             if (_engine != null)
             {
-                CancelUnoTimerInternal();
-                _engine = null;
-                _persistedMatchId = null;
-                _isGameOver = false;
-                _canPassCurrentTurn = false;
+                ResetRoomInternal();
             }
 
             _hostConnectionId = connectionId;
+            return true;
+        }
+    }
+
+    public void ClearFinishedGame()
+    {
+        lock (_syncLock)
+        {
+            if (_isGameOver)
+            {
+                ResetRoomInternal();
+            }
         }
     }
 
@@ -102,7 +127,11 @@ public class GameSessionManager
             return false;
         }
 
-        string normalizedName = playerName.Trim().ToUpperInvariant();
+        string? canonicalName = ResolveCanonicalPlayerName(playerName);
+        if (canonicalName == null)
+        {
+            return false;
+        }
 
         lock (_syncLock)
         {
@@ -112,26 +141,10 @@ public class GameSessionManager
                 return false;
             }
 
-            // Verificar que el nombre exista en los jugadores válidos
-            bool isValidName = false;
-            for (int i = 0; i < SeedPlayers.Length; i++)
-            {
-                if (SeedPlayers[i].Name == normalizedName)
-                {
-                    isValidName = true;
-                    break;
-                }
-            }
-
-            if (!isValidName)
-            {
-                return false;
-            }
-
             // Si otro cliente ya eligió ese jugador, se rechaza
-            if (_joinedPlayers.Contains(normalizedName))
+            if (_joinedPlayers.Contains(canonicalName))
             {
-                if (_connectionToPlayer.TryGetValue(connectionId, out string? existing) && existing == normalizedName)
+                if (_connectionToPlayer.TryGetValue(connectionId, out string? existing) && existing == canonicalName)
                 {
                     return true;
                 }
@@ -144,8 +157,8 @@ public class GameSessionManager
                 _joinedPlayers.Remove(previousName);
             }
 
-            _connectionToPlayer[connectionId] = normalizedName;
-            _joinedPlayers.Add(normalizedName);
+            _connectionToPlayer[connectionId] = canonicalName;
+            _joinedPlayers.Add(canonicalName);
             return true;
         }
     }
@@ -406,18 +419,15 @@ public class GameSessionManager
                 _hostConnectionId = null;
             }
 
-            // Si la partida estaba activa y aún no terminaba, se interrumpe para todos
+            // Si la partida estaba activa y aún no terminaba, se interrumpe para todos y se limpia la sala
             if (_engine != null && !_isGameOver)
             {
                 wasGameInterrupted = true;
-                _isGameOver = true;
-                CancelUnoTimerInternal();
-                _engine = null;
+                ResetRoomInternal();
             }
             else if (_engine != null && _isGameOver && _joinedPlayers.Count == 0)
             {
-                CancelUnoTimerInternal();
-                _engine = null;
+                ResetRoomInternal();
             }
         }
     }
@@ -634,6 +644,45 @@ public class GameSessionManager
             _unoTimerCts.Dispose();
             _unoTimerCts = null;
         }
+    }
+
+    private void ResetRoomInternal()
+    {
+        CancelUnoTimerInternal();
+        _engine = null;
+        _persistedMatchId = null;
+        _isGameOver = false;
+        _canPassCurrentTurn = false;
+        _unoWindowPlayer = null;
+        _pendingPenaltyPlayerName = null;
+        _pendingGameOverArgs = null;
+        _hostConnectionId = null;
+        _connectionToPlayer.Clear();
+        _joinedPlayers.Clear();
+    }
+
+    private static string? ResolveCanonicalPlayerName(string playerName)
+    {
+        string trimmed = playerName.Trim();
+        for (int i = 0; i < SeedPlayers.Length; i++)
+        {
+            if (string.Equals(SeedPlayers[i].Name, trimmed, StringComparison.OrdinalIgnoreCase))
+            {
+                return SeedPlayers[i].Name;
+            }
+        }
+
+        if (string.Equals(trimmed, "RODRIGO", StringComparison.OrdinalIgnoreCase))
+        {
+            return "Rodri";
+        }
+
+        if (string.Equals(trimmed, "TONATIUH", StringComparison.OrdinalIgnoreCase))
+        {
+            return "Tona";
+        }
+
+        return null;
     }
 
     private async Task<Guid?> TryCreateMatchInApiAsync(IEnumerable<Player> players)

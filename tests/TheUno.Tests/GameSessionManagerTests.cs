@@ -21,12 +21,22 @@ public class GameSessionManagerTests
     }
 
     [Fact]
+    public void TryCreateGame_RejectsSecondHostWhileRoomIsOpen()
+    {
+        bool firstCreated = _manager.TryCreateGame("conn-host");
+        bool secondCreated = _manager.TryCreateGame("conn-other");
+
+        Assert.True(firstCreated);
+        Assert.False(secondCreated);
+    }
+
+    [Fact]
     public void ChoosePlayer_RejectsDuplicateSelectionFromDifferentConnections()
     {
-        _manager.CreateGame("conn-host");
+        _manager.TryCreateGame("conn-host");
 
-        bool firstPick = _manager.ChoosePlayer("conn-host", "RODRIGO");
-        bool duplicatePick = _manager.ChoosePlayer("conn-2", "RODRIGO");
+        bool firstPick = _manager.ChoosePlayer("conn-host", "Rodri");
+        bool duplicatePick = _manager.ChoosePlayer("conn-2", "Rodri");
 
         Assert.True(firstPick);
         Assert.False(duplicatePick);
@@ -36,10 +46,10 @@ public class GameSessionManagerTests
     [Fact]
     public async Task CreatePersonalizedStates_SendsOnlyOwnHandToEachPlayer()
     {
-        _manager.CreateGame("conn-1");
-        _manager.ChoosePlayer("conn-1", "RODRIGO");
-        _manager.ChoosePlayer("conn-2", "TONATIUH");
-        _manager.ChoosePlayer("conn-3", "ALEJANDRO");
+        _manager.TryCreateGame("conn-1");
+        _manager.ChoosePlayer("conn-1", "Rodri");
+        _manager.ChoosePlayer("conn-2", "Tona");
+        _manager.ChoosePlayer("conn-3", "Alejandro");
 
         bool started = await _manager.StartGameAsync();
         Assert.True(started);
@@ -51,9 +61,9 @@ public class GameSessionManagerTests
         var tonaState = states.First(s => s.ConnectionId == "conn-2").State;
         var aleState = states.First(s => s.ConnectionId == "conn-3").State;
 
-        Assert.Equal("RODRIGO", rodriState.MyName);
-        Assert.Equal("TONATIUH", tonaState.MyName);
-        Assert.Equal("ALEJANDRO", aleState.MyName);
+        Assert.Equal("Rodri", rodriState.MyName);
+        Assert.Equal("Tona", tonaState.MyName);
+        Assert.Equal("Alejandro", aleState.MyName);
 
         // Las cartas en MyHand de cada jugador tienen Ids únicos que no deben estar en la mano de los demás
         var rodriCardIds = rodriState.MyHand.Select(c => c.Id).ToHashSet();
@@ -71,15 +81,15 @@ public class GameSessionManagerTests
     [Fact]
     public async Task RemoveConnection_DuringActiveGame_MarksGameAsInterrupted()
     {
-        _manager.CreateGame("conn-1");
-        _manager.ChoosePlayer("conn-1", "RODRIGO");
-        _manager.ChoosePlayer("conn-2", "TONATIUH");
-        _manager.ChoosePlayer("conn-3", "ALEJANDRO");
+        _manager.TryCreateGame("conn-1");
+        _manager.ChoosePlayer("conn-1", "Rodri");
+        _manager.ChoosePlayer("conn-2", "Tona");
+        _manager.ChoosePlayer("conn-3", "Alejandro");
         await _manager.StartGameAsync();
 
         _manager.RemoveConnection("conn-2", out bool wasGameInterrupted, out string? leftPlayerName);
 
         Assert.True(wasGameInterrupted);
-        Assert.Equal("TONATIUH", leftPlayerName);
+        Assert.Equal("Tona", leftPlayerName);
     }
 }
