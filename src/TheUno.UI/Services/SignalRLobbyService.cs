@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.SignalR;
 
 namespace TheUno.UI.Services;
 
@@ -30,7 +31,16 @@ public sealed class SignalRLobbyService : ILobbyService
     public async Task CreateGameAsync()
     {
         if (!_connection.IsConnected) await ConnectAsync(LocalServer);
-        await _connection.InvokeAsync(HubMethods.CreateGame);
+
+        try
+        {
+            await _connection.InvokeAsync(HubMethods.CreateGame);
+        }
+        catch (HubException e)
+        {
+            // CreateGame solo se rechaza cuando ya hay una partida en el servidor
+            throw new GameAlreadyExistsException(e);
+        }
     }
 
     public async Task ConnectAsync(string serverIp)

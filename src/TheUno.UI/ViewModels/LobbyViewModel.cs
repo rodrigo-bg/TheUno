@@ -16,8 +16,11 @@ namespace TheUno.UI.ViewModels;
 /// </summary>
 public partial class LobbyViewModel : ViewModelBase
 {
-    /// <summary>Los 3 jugadores de la partida, en el orden en que se muestran.</summary>
-    public static readonly string[] PlayerNames = { "RODRIGO", "TONATIUH", "ALEJANDRO" };
+    /// <summary>
+    /// Los 3 jugadores de la partida, en el orden en que se muestran. Son los mismos nombres que guarda
+    /// la base de datos, así coinciden con el historial.
+    /// </summary>
+    public static readonly string[] PlayerNames = { "Rodri", "Tona", "Alejandro" };
 
     // Solo es null en el diseñador de Rider/Avalonia
     private readonly ILobbyService? _lobby;
@@ -135,6 +138,7 @@ public partial class LobbyViewModel : ViewModelBase
 
             await _lobby.ConnectAsync(ServerIp.Trim());
             WatchConnection();
+            ServerAddress.Remember(ServerIp);
             IsConnected = true;
             ShowStatus("¡Conexión exitosa!", isError: false);
         }
@@ -167,6 +171,9 @@ public partial class LobbyViewModel : ViewModelBase
                 {
                     await _lobby.CreateGameAsync();
                     WatchConnection();
+
+                    // El servidor y la API corren en esta misma compu
+                    ServerAddress.Remember(ServerAddress.Local);
                 }
 
                 if (!await _lobby.ChoosePlayerAsync(option.Name))
@@ -181,6 +188,11 @@ public partial class LobbyViewModel : ViewModelBase
             StatusMessage = string.Empty;
             IsInRoom = true;
             OnPlayersChanged();
+        }
+        catch (GameAlreadyExistsException)
+        {
+            // Otra compu ya creó la partida en este servidor: hay que unirse a ella
+            ShowStatus("ERROR: Partida existente ya creada con la misma red IP", isError: true);
         }
         catch (Exception)
         {

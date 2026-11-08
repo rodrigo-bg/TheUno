@@ -75,9 +75,12 @@
             <Setter Property="FontSize" Value="30" />
             <Setter Property="Foreground" Value="#E6B400" />
         </Style>
+        <!-- Los avisos largos (como el de partida existente) pasan a la siguiente línea en vez de cortarse -->
         <Style Selector="TextBlock.status">
             <Setter Property="FontSize" Value="13" />
             <Setter Property="Foreground" Value="#40FF00" />
+            <Setter Property="TextWrapping" Value="Wrap" />
+            <Setter Property="LineHeight" Value="22" />
         </Style>
         <Style Selector="TextBlock.status.error">
             <Setter Property="Foreground" Value="#FF4040" />
@@ -284,7 +287,7 @@
 
         <!-- Va al final para quedar encima del cuadro y recibir los clics -->
         <Button Classes="pixelButton backButton"
-                Content="← MENU"
+                Content="← REGRESAR"
                 Command="{Binding BackToMenuCommand}" />
     </Grid>
 </UserControl>
