@@ -4,6 +4,9 @@ using CommunityToolkit.Mvvm.Input;
 
 namespace TheUno.UI.ViewModels;
 
+/// <summary>
+/// Menú principal: iniciar juego (crear o unirse a una partida), ver el historial y quitar el sonido.
+/// </summary>
 public partial class MenuViewModel : ViewModelBase
 {
     private readonly Action _onCreateGame;
