@@ -31,20 +31,5 @@
         </DataTemplate>
     </Window.DataTemplates>
 
-    <Panel>
-        <ContentControl Content="{Binding CurrentView}" />
-
-        <!-- Mientras se crea la partida en la API: capa oscura que bloquea los clics -->
-        <Panel IsVisible="{Binding IsLoading}" Background="#B3000000">
-            <TextBlock Text="CARGANDO..."
-                       FontSize="24"
-                       Foreground="White"
-                       HorizontalAlignment="Center"
-                       VerticalAlignment="Center">
-                <TextBlock.Effect>
-                    <DropShadowEffect OffsetX="3" OffsetY="3" BlurRadius="0" Color="Black" Opacity="1" />
-                </TextBlock.Effect>
-            </TextBlock>
-        </Panel>
-    </Panel>
+    <ContentControl Content="{Binding CurrentView}" />
 </Window>

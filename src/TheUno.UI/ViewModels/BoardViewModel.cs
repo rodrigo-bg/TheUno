@@ -110,7 +110,7 @@ public partial class BoardViewModel : ViewModelBase
     private string _victoryTitle = string.Empty;
 
     /// <summary>
-    /// Nombre del ganador en mayúsculas, para la pantalla de victoria. Si ganó otro dice "Ganó RODRIGO"
+    /// Nombre del ganador en mayúsculas, para la pantalla de victoria. Si ganó otro dice "Ganó RODRI"
     /// (en minúsculas porque la fuente pixel no tiene la "Ó" mayúscula).
     /// </summary>
     [ObservableProperty]
@@ -124,7 +124,7 @@ public partial class BoardViewModel : ViewModelBase
     [ObservableProperty]
     private bool _isInterruptedNoticeOpen;
 
-    /// <summary>Por qué se interrumpió, por ejemplo "RODRIGO se salió de la partida".</summary>
+    /// <summary>Por qué se interrumpió, por ejemplo "Rodri se salió de la partida".</summary>
     [ObservableProperty]
     private string _interruptedMessage = string.Empty;
 

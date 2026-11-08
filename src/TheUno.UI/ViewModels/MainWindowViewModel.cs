@@ -1,6 +1,7 @@
 using System;
+using System.Net.Http;
 using CommunityToolkit.Mvvm.ComponentModel;
-using TheUno.Core.Contracts;
+using TheUno.Infrastructure.Repositories;
 using TheUno.UI.Services;
 
 namespace TheUno.UI.ViewModels;
@@ -11,9 +12,10 @@ namespace TheUno.UI.ViewModels;
 /// </summary>
 public partial class MainWindowViewModel : ViewModelBase
 {
+    // Si la API no responde, a los 3 segundos se deja de esperar y el historial avisa
+    private static readonly TimeSpan ApiTimeout = TimeSpan.FromSeconds(3);
+
     private readonly MusicPlayer _music;
-    private readonly IMatchRepository _matchRepository;
-    private readonly IGameLogRepository _logRepository;
 
     // Crea la conexión con la sala de cada partida
     private readonly Func<ILobbyService>? _createLobby;
@@ -21,18 +23,9 @@ public partial class MainWindowViewModel : ViewModelBase
     [ObservableProperty]
     private ViewModelBase _currentView;
 
-    /// <summary>
-    /// Se muestra "CARGANDO..." y se ignoran más clics.
-    /// </summary>
-    [ObservableProperty]
-    private bool _isLoading;
-
-    public MainWindowViewModel(MusicPlayer music, IMatchRepository matchRepository, IGameLogRepository logRepository,
-        Func<ILobbyService>? createLobby = null)
+    public MainWindowViewModel(MusicPlayer music, Func<ILobbyService>? createLobby = null)
     {
         _music = music;
-        _matchRepository = matchRepository;
-        _logRepository = logRepository;
         _createLobby = createLobby;
         _currentView = CreateMenu();
         PlayMusicFor(_currentView);
@@ -53,7 +46,7 @@ public partial class MainWindowViewModel : ViewModelBase
     private void ShowLobby(bool isHost, string? reconnectIp = null)
     {
         LobbyViewModel? lobby = null;
-        lobby = new LobbyViewModel(_createLobby?.Invoke(), isHost, ShowMenu,
+        lobby = new LobbyViewModel(_createLobby?.Invoke(), isHost, ShowPlayOptions,
             _ => StartGame(lobby!, () => ShowLobby(isHost, lobby!.ServerIp)), reconnectIp);
         CurrentView = lobby;
     }
@@ -69,14 +62,34 @@ public partial class MainWindowViewModel : ViewModelBase
         CurrentView = new BoardViewModel(session, ShowMenu, playAgain);
     }
 
+    /// <summary>
+    /// El historial lee la API de la compu servidor (la de la última partida; sin partida, esta compu).
+    /// Los repositorios se crean con la IP del momento, también cuando se cambia desde el historial.
+    /// </summary>
     private void ShowHistory()
     {
-        CurrentView = new StatsViewModel(ShowMenu, _matchRepository, _logRepository);
+        CurrentView = new StatsViewModel(ShowMenu,
+            () => new ApiMatchRepository(CreateApiClient()),
+            () => new ApiGameLogRepository(CreateApiClient()));
     }
+
+    private static HttpClient CreateApiClient() => new()
+    {
+        BaseAddress = ServerAddress.ApiUri,
+        Timeout = ApiTimeout
+    };
 
     // Al regresar se crea un menú nuevo; la partida o el historial anterior se descartan.
     private void ShowMenu()
     {
         CurrentView = CreateMenu();
+    }
+
+    /// <summary>"Regresar" desde la sala vuelve a las opciones de crear o unirse, no al menú principal.</summary>
+    private void ShowPlayOptions()
+    {
+        var menu = CreateMenu();
+        menu.IsPlayOptionsOpen = true;
+        CurrentView = menu;
     }
 }

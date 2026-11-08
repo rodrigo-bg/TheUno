@@ -99,6 +99,40 @@
             <Setter Property="Background" Value="#66E6B400" />
         </Style>
 
+        <!-- Servidor del historial: campo para la IP y botón para recargar -->
+        <Style Selector="TextBox.serverBox">
+            <Setter Property="FontSize" Value="13" />
+            <Setter Property="Foreground" Value="White" />
+            <Setter Property="Background" Value="#1A1A1A" />
+            <Setter Property="BorderBrush" Value="Black" />
+            <Setter Property="BorderThickness" Value="3" />
+            <Setter Property="CornerRadius" Value="0" />
+            <Setter Property="Padding" Value="10,8" />
+            <Setter Property="Width" Value="230" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+        </Style>
+        <Style Selector="TextBox.serverBox:pointerover /template/ Border#PART_BorderElement">
+            <Setter Property="Background" Value="#1A1A1A" />
+            <Setter Property="BorderBrush" Value="White" />
+        </Style>
+        <Style Selector="TextBox.serverBox:focus /template/ Border#PART_BorderElement">
+            <Setter Property="Background" Value="#1A1A1A" />
+            <Setter Property="BorderBrush" Value="#E6B400" />
+        </Style>
+        <Style Selector="TextBox.serverBox:pointerover, TextBox.serverBox:focus">
+            <Setter Property="Foreground" Value="White" />
+        </Style>
+        <Style Selector="Button.reloadButton">
+            <Setter Property="Background" Value="#0020FF" />
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="Padding" Value="14,10" />
+            <Setter Property="BorderThickness" Value="3" />
+            <Setter Property="HorizontalAlignment" Value="Left" />
+        </Style>
+        <Style Selector="Button.reloadButton:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="#4060FF" />
+        </Style>
+
         <Style Selector="TextBlock.header, TextBlock.cell">
             <Setter Property="Effect">
                 <DropShadowEffect OffsetX="2" OffsetY="2" BlurRadius="0" Color="Black" Opacity="1" />
@@ -123,6 +157,19 @@
                                    StrokeThickness="4"
                                    ShadowOffset="6"
                                    HorizontalAlignment="Center" />
+
+            <!-- De qué compu se lee el historial. Se puede escribir otra IP y recargar (Enter también) -->
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="16">
+                <TextBlock Classes="header" Text="SERVIDOR" VerticalAlignment="Center" />
+                <TextBox Classes="serverBox" Text="{Binding ServerHost}" Watermark="192.168.1.50">
+                    <TextBox.KeyBindings>
+                        <KeyBinding Gesture="Enter" Command="{Binding ChangeServerCommand}" />
+                    </TextBox.KeyBindings>
+                </TextBox>
+                <Button Classes="pixelButton reloadButton"
+                        Content="RECARGAR"
+                        Command="{Binding ChangeServerCommand}" />
+            </StackPanel>
 
             <Border Background="#3A2213"
                     BorderBrush="Black"
