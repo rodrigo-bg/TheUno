@@ -16,8 +16,11 @@ namespace TheUno.UI.ViewModels;
 /// </summary>
 public partial class LobbyViewModel : ViewModelBase
 {
-    /// <summary>Los 3 jugadores de la partida, en el orden en que se muestran.</summary>
-    public static readonly string[] PlayerNames = { "RODRIGO", "TONATIUH", "ALEJANDRO" };
+    /// <summary>
+    /// Los 3 jugadores de la partida, en el orden en que se muestran. Son los mismos nombres que guarda
+    /// la base de datos, así coinciden con el historial.
+    /// </summary>
+    public static readonly string[] PlayerNames = { "Rodri", "Tona", "Alejandro" };
 
     // Solo es null en el diseñador de Rider/Avalonia
     private readonly ILobbyService? _lobby;
