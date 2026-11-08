@@ -3,6 +3,7 @@ using System.Threading.Tasks;
 using TheUno.Core.Contracts;
 using TheUno.Core.Engine;
 using TheUno.Core.Events;
+using TheUno.Core.Models;
 
 namespace TheUno.Infrastructure.Services;
 
@@ -54,13 +55,15 @@ public class GameAuditService
     {
         try
         {
+            // Mismo formato que el log del motor ("Red 7", "Wild"); el color elegido solo va en comodines
+            var isWild = e.Card.Type is CardType.Wild or CardType.WildDrawFour;
             var entry = new GameLogEntryDto(
                 _matchId,
                 _turnNumber,
                 e.Player.Id,
                 GameActionType.PlayCard,
-                $"{e.Card.Color}_{e.Card.Type}",
-                e.ActiveColor.ToString(),
+                e.Card.GetDisplayText(),
+                isWild ? e.ActiveColor.ToString() : null,
                 DateTime.UtcNow
             );
             await _logRepository.LogActionAsync(entry);
@@ -81,7 +84,7 @@ public class GameAuditService
                 _turnNumber,
                 e.Player.Id,
                 GameActionType.DrawCard,
-                $"{e.Card.Color}_{e.Card.Type}",
+                e.Card.GetDisplayText(),
                 null,
                 DateTime.UtcNow
             );
