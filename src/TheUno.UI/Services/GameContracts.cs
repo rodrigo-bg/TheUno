@@ -33,6 +33,7 @@ public static class HubMessages
 /// <summary>Una carta tal como viaja por la red.</summary>
 public record CardDto(Guid Id, CardColor Color, CardType Type, int? Number)
 {
+    // Se convierte en la carta del Core para reutilizar sus imágenes
     public Card ToCard() => new(Id, Color, Type, Number);
 }
 
@@ -46,11 +47,11 @@ public record PlayerStateDto(string Name, int CardCount, bool HasCalledUno);
 public record GameStateDto(
     string MyName,
     List<CardDto> MyHand,
-    List<Guid> PlayableCardIds,
-    List<PlayerStateDto> Players,
+    List<Guid> PlayableCardIds,     // vacía si no es su turno
+    List<PlayerStateDto> Players,   // los 3, en el orden de los turnos
     string CurrentPlayerName,
     CardDto TopCard,
     CardColor ActiveColor,
-    int Direction,
-    bool CanDraw,
-    bool CanPass);
+    int Direction,                  // 1 horario, -1 antihorario
+    bool CanDraw,                   // es su turno y todavía no roba
+    bool CanPass);                  // ya robó una carta que se puede tirar

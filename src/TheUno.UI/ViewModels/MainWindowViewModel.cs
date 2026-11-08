@@ -39,6 +39,20 @@ public partial class MainWindowViewModel : ViewModelBase
 
     private MenuViewModel CreateMenu() => new(() => ShowLobby(isHost: true), () => ShowLobby(isHost: false), ShowHistory);
 
+    // Al regresar se crea un menú nuevo; la partida o el historial anterior se descartan.
+    private void ShowMenu()
+    {
+        CurrentView = CreateMenu();
+    }
+
+    /// <summary>"Regresar" desde la sala vuelve a las opciones de crear o unirse, no al menú principal.</summary>
+    private void ShowPlayOptions()
+    {
+        var menu = CreateMenu();
+        menu.IsPlayOptionsOpen = true;
+        CurrentView = menu;
+    }
+
     /// <summary>
     /// Crear o unirse a partida: cada vez es una sala nueva. Al volver a jugar se regresa aquí
     /// con el mismo papel (quien creó la partida la vuelve a crear; quien se unió se reconecta a la misma IP).
@@ -78,18 +92,4 @@ public partial class MainWindowViewModel : ViewModelBase
         BaseAddress = ServerAddress.ApiUri,
         Timeout = ApiTimeout
     };
-
-    // Al regresar se crea un menú nuevo; la partida o el historial anterior se descartan.
-    private void ShowMenu()
-    {
-        CurrentView = CreateMenu();
-    }
-
-    /// <summary>"Regresar" desde la sala vuelve a las opciones de crear o unirse, no al menú principal.</summary>
-    private void ShowPlayOptions()
-    {
-        var menu = CreateMenu();
-        menu.IsPlayOptionsOpen = true;
-        CurrentView = menu;
-    }
 }

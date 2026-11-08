@@ -21,6 +21,19 @@ public partial class BoardViewModel : ViewModelBase
     // Tiempo que se ve el aviso de penalización por no cantar UNO
     private static readonly TimeSpan PenaltyNoticeDuration = TimeSpan.FromSeconds(2.5);
 
+    // Pausa antes de la pantalla final, para que se vea la última carta en la mesa
+    private static readonly TimeSpan VictoryDelay = TimeSpan.FromSeconds(1.5);
+
+    // Color activo con la paleta de las cartas 8 bits; se crean una sola vez
+    private static readonly IBrush NoColorBrush = new SolidColorBrush(Color.Parse("#555555"));
+    private static readonly Dictionary<CardColor, IBrush> ColorBrushes = new()
+    {
+        [CardColor.Red] = new SolidColorBrush(Color.Parse("#FF0000")),
+        [CardColor.Green] = new SolidColorBrush(Color.Parse("#40FF00")),
+        [CardColor.Blue] = new SolidColorBrush(Color.Parse("#0020FF")),
+        [CardColor.Yellow] = new SolidColorBrush(Color.Parse("#E6B400"))
+    };
+
     // La partida del servidor. Solo es null en el diseñador de Rider/Avalonia
     private readonly IGameSession? _session;
 
@@ -203,15 +216,7 @@ public partial class BoardViewModel : ViewModelBase
 
     public string DirectionText => IsClockwise ? "Horario" : "Antihorario";
 
-    // Paleta tomada directamente de las cartas 8 bits
-    public IBrush ActiveColorBrush => ActiveColor switch
-    {
-        CardColor.Red => new SolidColorBrush(Color.Parse("#FF0000")),
-        CardColor.Green => new SolidColorBrush(Color.Parse("#40FF00")),
-        CardColor.Blue => new SolidColorBrush(Color.Parse("#0020FF")),
-        CardColor.Yellow => new SolidColorBrush(Color.Parse("#E6B400")),
-        _ => new SolidColorBrush(Color.Parse("#555555"))
-    };
+    public IBrush ActiveColorBrush => ColorBrushes.GetValueOrDefault(ActiveColor, NoColorBrush);
 
     // ---------- Turno ----------
 
@@ -319,7 +324,7 @@ public partial class BoardViewModel : ViewModelBase
     /// <summary>
     /// Abre el selector de color. El juego no continúa hasta elegir uno: no hay opción de cancelar.
     /// </summary>
-    public void AskForColor(Action<CardColor>? onChosen = null)
+    private void AskForColor(Action<CardColor> onChosen)
     {
         _onColorChosen = onChosen;
         IsColorPickerOpen = true;
@@ -428,13 +433,9 @@ public partial class BoardViewModel : ViewModelBase
     /// </summary>
     private void ShowInterrupted(string message)
     {
-        if (_isGameOver) return;
-        _isGameOver = true;
+        if (!TryEndGame()) return;
 
         CloseUnoWindow();
-        CanDraw = false;
-        CanPassTurn = false;
-        DrawCardCommand.NotifyCanExecuteChanged();
         IsColorPickerOpen = false;
         IsExitDialogOpen = false;
 
@@ -464,19 +465,12 @@ public partial class BoardViewModel : ViewModelBase
     }
 
     /// <summary>
-    /// Termina la partida: tras una pausa de 1.5 segundos (para que se vea la última carta en la mesa)
-    /// aparece la pantalla final con el nombre del ganador y suena victoria o derrota.
+    /// Tras una pausa aparece la pantalla final con el ganador y suena victoria o derrota.
     /// La música se pausa mientras suena y sigue al terminar.
-    /// Mientras tanto ya no se puede robar ni tirar.
     /// </summary>
-    public void ShowVictory(PlayerViewModel winner)
+    private void ShowVictory(PlayerViewModel winner)
     {
-        if (_isGameOver) return;
-        _isGameOver = true;
-
-        CanPassTurn = false;
-        CanDraw = false;
-        DrawCardCommand.NotifyCanExecuteChanged();
+        if (!TryEndGame()) return;
 
         // El jugador de esta compu siempre está abajo (Player1)
         var iWon = winner == Player1;
@@ -490,7 +484,22 @@ public partial class BoardViewModel : ViewModelBase
 
             App.Music.Pause();
             App.Sounds.Play(iWon ? SoundEffects.WinSound : SoundEffects.LoseSound, App.Music.Resume);
-        }, TimeSpan.FromSeconds(1.5));
+        }, VictoryDelay);
+    }
+
+    /// <summary>
+    /// La partida terminó (alguien ganó o se interrumpió): ya no se puede robar ni tirar.
+    /// Regresa false si ya había terminado, para no avisar dos veces.
+    /// </summary>
+    private bool TryEndGame()
+    {
+        if (_isGameOver) return false;
+        _isGameOver = true;
+
+        CanDraw = false;
+        CanPassTurn = false;
+        DrawCardCommand.NotifyCanExecuteChanged();
+        return true;
     }
 
     [RelayCommand]

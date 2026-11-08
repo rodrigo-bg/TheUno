@@ -35,10 +35,13 @@ public interface IGameSession
     /// <summary>Tira una carta. Los comodines llevan el color elegido.</summary>
     Task PlayCardAsync(Guid cardId, CardColor? chosenColor = null);
 
+    /// <summary>Roba una carta del mazo.</summary>
     Task DrawCardAsync();
 
+    /// <summary>Se queda con la carta robada y pasa el turno.</summary>
     Task PassTurnAsync();
 
+    /// <summary>Canta UNO dentro de la ventana de 2 segundos.</summary>
     Task CallUnoAsync();
 
     /// <summary>Sale de la partida.</summary>
