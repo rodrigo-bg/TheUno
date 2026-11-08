@@ -8,6 +8,7 @@ namespace TheUno.UI.Services;
 /// </summary>
 public static class ServerAddress
 {
+    // 127.0.0.1 en lugar de localhost: en Windows localhost también intenta IPv6 y tarda más en fallar
     public const string Local = "127.0.0.1";
     public const int ApiPort = 8000;
 
