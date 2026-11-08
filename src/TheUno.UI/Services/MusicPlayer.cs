@@ -44,22 +44,9 @@ public sealed class MusicPlayer : IDisposable
         set
         {
             _isMuted = value;
-
-            try
-            {
-                if (OperatingSystem.IsWindows())
-                {
-                    if (_volumeProvider is not null) _volumeProvider.Volume = CurrentVolume;
-                }
-                else
-                {
-                    SignalMac(value ? "-STOP" : "-CONT");
-                }
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine($"No se pudo silenciar la música: {ex.Message}");
-            }
+            Control("silenciar",
+                () => { if (_volumeProvider is not null) _volumeProvider.Volume = CurrentVolume; },
+                value ? "-STOP" : "-CONT");
         }
     }
 
@@ -97,42 +84,31 @@ public sealed class MusicPlayer : IDisposable
     /// Pausa la canción actual sin perder por dónde iba (por ejemplo, mientras suena victoria o derrota).
     /// Si mientras tanto se cambia de canción, la nueva suena normal.
     /// </summary>
-    public void Pause()
-    {
-        try
-        {
-            if (OperatingSystem.IsWindows())
-            {
-                _output?.Pause();
-            }
-            else
-            {
-                SignalMac("-STOP");
-            }
-        }
-        catch (Exception ex)
-        {
-            Debug.WriteLine($"No se pudo pausar la música: {ex.Message}");
-        }
-    }
+    public void Pause() => Control("pausar", () => _output?.Pause(), "-STOP");
 
-    /// <summary>Sigue la canción desde donde se pausó.</summary>
-    public void Resume()
+    /// <summary>Sigue la canción desde donde se pausó (en silencio, macOS la deja detenida).</summary>
+    public void Resume() => Control("reanudar", () => _output?.Play(), _isMuted ? null : "-CONT");
+
+    /// <summary>
+    /// Aplica un cambio a la canción que suena: en Windows con NAudio y en macOS mandándole
+    /// una señal a afplay. Si falla, el juego sigue sin ese cambio.
+    /// </summary>
+    private void Control(string action, Action onWindows, string? macSignal)
     {
         try
         {
             if (OperatingSystem.IsWindows())
             {
-                _output?.Play();
+                onWindows();
             }
-            else if (!_isMuted)
+            else if (macSignal is not null)
             {
-                SignalMac("-CONT");
+                SignalMac(macSignal);
             }
         }
         catch (Exception ex)
         {
-            Debug.WriteLine($"No se pudo reanudar la música: {ex.Message}");
+            Debug.WriteLine($"No se pudo {action} la música: {ex.Message}");
         }
     }
 
