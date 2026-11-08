@@ -24,7 +24,10 @@ public interface ILobbyService
     /// <summary>Quien creó la partida la empezó: todos pasan al tablero.</summary>
     event Action? GameStarted;
 
-    /// <summary>Esta compu crea la partida y queda como servidor.</summary>
+    /// <summary>
+    /// Esta compu crea la partida y queda como servidor.
+    /// Lanza GameAlreadyExistsException si en ese servidor ya hay una partida creada.
+    /// </summary>
     Task CreateGameAsync();
 
     /// <summary>Se conecta a la partida de otra compu. Lanza una excepción si no responde.</summary>
@@ -38,4 +41,13 @@ public interface ILobbyService
 
     /// <summary>Sale de la sala (o la cierra, si es quien la creó).</summary>
     Task LeaveAsync();
+}
+
+/// <summary>El servidor rechazó crear la partida porque otra compu ya la creó: hay que unirse a ella.</summary>
+public sealed class GameAlreadyExistsException : Exception
+{
+    public GameAlreadyExistsException(Exception? inner = null)
+        : base("Ya hay una partida creada en este servidor.", inner)
+    {
+    }
 }

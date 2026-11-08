@@ -186,6 +186,11 @@ public partial class LobbyViewModel : ViewModelBase
             IsInRoom = true;
             OnPlayersChanged();
         }
+        catch (GameAlreadyExistsException)
+        {
+            // Otra compu ya creó la partida en este servidor: hay que unirse a ella
+            ShowStatus("ERROR: Partida existente ya creada con la misma red IP", isError: true);
+        }
         catch (Exception)
         {
             ShowStatus("No se pudo conectar con el servidor", isError: true);
