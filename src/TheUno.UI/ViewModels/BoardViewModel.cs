@@ -27,6 +27,10 @@ public partial class BoardViewModel : ViewModelBase
     // Pausa antes de la pantalla final, para que se vea la última carta en la mesa
     private static readonly TimeSpan VictoryDelay = TimeSpan.FromSeconds(1.5);
 
+    // Lo que dura el resaltado de la dirección al cambiar: 1 s en amarillo y luego se desvanece.
+    // Debe coincidir con la animación de BoardView.axaml.
+    private static readonly TimeSpan DirectionHighlightDuration = TimeSpan.FromSeconds(1.6);
+
     // Cada cuánto el rival en turno cambia la carta que se asoma, como si estuviera eligiendo
     private static readonly TimeSpan PickingInterval = TimeSpan.FromMilliseconds(500);
 
@@ -68,6 +72,9 @@ public partial class BoardViewModel : ViewModelBase
     // Igual, para el aviso de cartas especiales
     private int _specialCardNoticeCount;
 
+    // Igual, para el resaltado de la dirección
+    private int _directionHighlightCount;
+
     // Animación del rival en turno: su temporizador y la carta que tiene asomada
     private DispatcherTimer? _pickingTimer;
     private CardViewModel? _pickingCard;
@@ -87,6 +94,10 @@ public partial class BoardViewModel : ViewModelBase
     [NotifyPropertyChangedFor(nameof(IsCounterClockwise))]
     [NotifyPropertyChangedFor(nameof(DirectionText))]
     private bool _isClockwise = true;
+
+    /// <summary>La dirección acaba de cambiar: la flecha y su texto se ven en amarillo y luego se desvanecen.</summary>
+    [ObservableProperty]
+    private bool _isDirectionHighlighted;
 
     /// <summary>Carta visible en la pila de descarte.</summary>
     [ObservableProperty]
@@ -304,7 +315,11 @@ public partial class BoardViewModel : ViewModelBase
 
         if (TopDiscardCard.Card.Id != state.TopCard.Id) TopDiscardCard = new CardViewModel(state.TopCard.ToCard());
         ActiveColor = state.ActiveColor;
-        IsClockwise = state.Direction == 1;
+
+        var isClockwise = state.Direction == 1;
+        if (isClockwise != IsClockwise) HighlightDirection();
+        IsClockwise = isClockwise;
+
         ActivePlayer = GetPlayerViewModel(state.CurrentPlayerName);
         CanDraw = state.CanDraw;
         CanPassTurn = state.CanPass;
@@ -356,6 +371,27 @@ public partial class BoardViewModel : ViewModelBase
         {
             if (count == _specialCardNoticeCount) IsSpecialCardNoticeOpen = false;
         }, SpecialCardNoticeDuration);
+    }
+
+    /// <summary>
+    /// Resalta la dirección mientras dura la animación. Si cambia otra vez antes de que termine,
+    /// se quita y se vuelve a poner en el siguiente ciclo para que la animación empiece de nuevo.
+    /// </summary>
+    private void HighlightDirection()
+    {
+        var count = ++_directionHighlightCount;
+        IsDirectionHighlighted = false;
+
+        Dispatcher.UIThread.Post(() =>
+        {
+            if (count != _directionHighlightCount) return;
+            IsDirectionHighlighted = true;
+
+            DispatcherTimer.RunOnce(() =>
+            {
+                if (count == _directionHighlightCount) IsDirectionHighlighted = false;
+            }, DirectionHighlightDuration);
+        });
     }
 
     private PlayerViewModel GetPlayerViewModel(string name)
