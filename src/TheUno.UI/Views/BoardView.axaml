@@ -83,8 +83,10 @@
             </Setter>
         </Style>
         <!-- Va después de pixelText para que el amarillo del turno activo gane sobre el blanco -->
+        <!-- y su nombre se ve más grande; al acabar su turno regresa al tamaño normal -->
         <Style Selector="Border.playerZone.active TextBlock.playerName">
             <Setter Property="Foreground" Value="#E6B400" />
+            <Setter Property="FontSize" Value="20" />
         </Style>
         <Style Selector="TextBlock.zoneLabel">
             <Setter Property="FontSize" Value="10" />
