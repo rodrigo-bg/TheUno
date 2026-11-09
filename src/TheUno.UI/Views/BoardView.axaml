@@ -89,7 +89,7 @@
             <Setter Property="FontSize" Value="18" />
         </Style>
 
-        <!-- Aviso de carta especial: se ve completo casi 2 segundos y luego se desvanece poco a poco.
+        <!-- Aviso de jugada: se ve completo casi 2 segundos y luego se desvanece poco a poco.
              La duración total (2.5 s) es la misma que usa BoardViewModel. -->
         <Style Selector="Border.specialNotice.shown">
             <Style.Animations>
@@ -548,8 +548,8 @@
                 </StackPanel>
             </Grid>
 
-            <!-- Aviso de carta especial (+2, +4, saltar o reversa): lo ven todos unos segundos, arriba
-                 de las pilas para no tapar la carta que se tiró. No bloquea los clics. -->
+            <!-- Aviso de jugada (+2, +4, saltar, reversa, cantó UNO o no lo cantó): lo ven todos unos
+                 segundos, arriba de las pilas para no tapar la carta que se tiró. No bloquea los clics. -->
             <Border Grid.Row="1" Grid.Column="1"
                     Classes="specialNotice"
                     Classes.shown="{Binding IsSpecialCardNoticeOpen}"
@@ -648,27 +648,6 @@
                 </DockPanel>
             </Border>
         </Grid>
-
-        <!-- Aviso de penalización por no cantar UNO: aparece unos segundos al centro de la mesa.
-             No bloquea los clics, el juego sigue mientras se ve. -->
-        <Border IsVisible="{Binding IsPenaltyNoticeOpen}"
-                IsHitTestVisible="False"
-                Background="#3A2213"
-                BorderBrush="Black"
-                BorderThickness="6"
-                Padding="32,24"
-                HorizontalAlignment="Center"
-                VerticalAlignment="Center"
-                BoxShadow="10 10 0 0 #000000">
-            <TextBlock Classes="pixelText"
-                       FontSize="20"
-                       Foreground="#FF0000"
-                       Text="{Binding PenaltyMessage}">
-                <TextBlock.Effect>
-                    <DropShadowEffect OffsetX="3" OffsetY="3" BlurRadius="0" Color="Black" Opacity="1" />
-                </TextBlock.Effect>
-            </TextBlock>
-        </Border>
 
         <!-- Selector de color para comodines: 4 cuadrantes en el mismo orden que el dibujo del comodín.
              No tiene botón de cancelar porque el juego no puede seguir sin un color. -->

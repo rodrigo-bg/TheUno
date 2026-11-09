@@ -18,10 +18,7 @@ namespace TheUno.UI.ViewModels;
 /// </summary>
 public partial class BoardViewModel : ViewModelBase
 {
-    // Tiempo que se ve el aviso de penalización por no cantar UNO
-    private static readonly TimeSpan PenaltyNoticeDuration = TimeSpan.FromSeconds(2.5);
-
-    // Tiempo que se ve el aviso de una carta especial (+2, +4, saltar o reversa), contando el desvanecido.
+    // Tiempo que se ve el aviso de una jugada (carta especial o UNO), contando el desvanecido.
     // Debe coincidir con la animación de BoardView.axaml.
     private static readonly TimeSpan SpecialCardNoticeDuration = TimeSpan.FromSeconds(2.5);
 
@@ -66,11 +63,8 @@ public partial class BoardViewModel : ViewModelBase
     private Guid _lastTopCardId;
     private int _lastCardTotal;
 
-    // Cuenta los avisos de penalización: si sale otro antes de que se oculte el primero,
+    // Cuenta los avisos de jugadas: si sale otro antes de que se oculte el primero,
     // el temporizador del primero ya no lo oculta.
-    private int _penaltyNoticeCount;
-
-    // Igual, para el aviso de cartas especiales
     private int _specialCardNoticeCount;
 
     // Igual, para el resaltado de la dirección
@@ -127,19 +121,14 @@ public partial class BoardViewModel : ViewModelBase
     [ObservableProperty]
     private bool _isColorPickerOpen;
 
-    /// <summary>Muestra el aviso de que un jugador no cantó UNO y recibió 2 cartas.</summary>
-    [ObservableProperty]
-    private bool _isPenaltyNoticeOpen;
-
-    /// <summary>Texto del aviso, por ejemplo "¡JUGADOR 2 NO CANTÓ UNO! +2".</summary>
-    [ObservableProperty]
-    private string _penaltyMessage = string.Empty;
-
-    /// <summary>Muestra a todos el aviso de que alguien tiró un +2, +4, saltar o reversa.</summary>
+    /// <summary>
+    /// Muestra a todos el aviso de una jugada: alguien tiró un +2, +4, saltar o reversa,
+    /// cantó UNO o no lo cantó.
+    /// </summary>
     [ObservableProperty]
     private bool _isSpecialCardNoticeOpen;
 
-    /// <summary>Carta que se tiró, en grande: "+2", "+4", "SALTAR" o "REVERSA".</summary>
+    /// <summary>Lo que pasó, en grande: "+2", "+4", "SALTAR", "REVERSA" o "¡UNO!".</summary>
     [ObservableProperty]
     private string _specialCardTitle = string.Empty;
 
@@ -311,7 +300,11 @@ public partial class BoardViewModel : ViewModelBase
         {
             var viewModel = GetPlayerViewModel(player.Name);
             viewModel.CardCount = player.CardCount;
-            viewModel.HasCalledUno = player.HasCalledUno && player.CardCount == 1;
+
+            // Acaba de cantar UNO: se avisa a todos
+            var hasCalledUno = player.HasCalledUno && player.CardCount == 1;
+            if (hasCalledUno && !viewModel.HasCalledUno) ShowPlayNotice("¡UNO!", $"{player.Name} cantó UNO");
+            viewModel.HasCalledUno = hasCalledUno;
         }
 
         if (TopDiscardCard.Card.Id != state.TopCard.Id) TopDiscardCard = new CardViewModel(state.TopCard.ToCard());
@@ -361,10 +354,14 @@ public partial class BoardViewModel : ViewModelBase
             CardType.Reverse => ("REVERSA", "Cambia el sentido del juego"),
             _ => null
         };
-        if (notice is null) return;
+        if (notice is not null) ShowPlayNotice(notice.Value.Title, notice.Value.Detail);
+    }
 
-        SpecialCardTitle = notice.Value.Title;
-        SpecialCardDetail = notice.Value.Detail;
+    /// <summary>Muestra a todos el aviso de una jugada unos segundos, arriba de las pilas.</summary>
+    private void ShowPlayNotice(string title, string detail)
+    {
+        SpecialCardTitle = title;
+        SpecialCardDetail = detail;
 
         // Se quita y se vuelve a poner en el siguiente ciclo para que el desvanecido
         // (animación de BoardView.axaml) empiece de nuevo si llega otro aviso antes de terminar
@@ -532,19 +529,10 @@ public partial class BoardViewModel : ViewModelBase
 
     /// <summary>
     /// Un jugador recibió 2 cartas por no cantar UNO. Las cartas llegan con el siguiente estado;
-    /// aquí solo se muestra el aviso unos segundos.
+    /// aquí solo se avisa a todos, igual que las demás jugadas.
     /// </summary>
-    private void OnUnoPenalty(string playerName)
-    {
-        PenaltyMessage = $"¡{playerName.ToUpperInvariant()} NO CANTÓ UNO! +2";
-        IsPenaltyNoticeOpen = true;
-
-        var notice = ++_penaltyNoticeCount;
-        DispatcherTimer.RunOnce(() =>
-        {
-            if (notice == _penaltyNoticeCount) IsPenaltyNoticeOpen = false;
-        }, PenaltyNoticeDuration);
-    }
+    private void OnUnoPenalty(string playerName) =>
+        ShowPlayNotice("+2", $"{playerName} no cantó UNO y roba 2");
 
     // ---------- Salir de la partida ----------
 
