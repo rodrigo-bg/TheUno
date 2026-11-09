@@ -32,7 +32,7 @@ public partial class BoardViewModel : ViewModelBase
     private static readonly TimeSpan DirectionHighlightDuration = TimeSpan.FromSeconds(1.6);
 
     // Cada cuánto el rival en turno cambia la carta que se asoma, como si estuviera eligiendo
-    private static readonly TimeSpan PickingInterval = TimeSpan.FromMilliseconds(500);
+    private static readonly TimeSpan PickingInterval = TimeSpan.FromMilliseconds(250);
 
     // Color activo con la paleta de las cartas 8 bits; se crean una sola vez
     private static readonly IBrush NoColorBrush = new SolidColorBrush(Color.Parse("#555555"));
@@ -263,7 +263,10 @@ public partial class BoardViewModel : ViewModelBase
     {
         if (oldValue is not null) oldValue.IsActive = false;
         newValue.IsActive = true;
+
+        // Si le toca a un rival, empieza a "elegir" de inmediato, sin esperar al temporizador
         LowerPickingCard();
+        if (_pickingTimer is not null) OnPickingTick(null, EventArgs.Empty);
     }
 
     /// <summary>

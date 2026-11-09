@@ -195,12 +195,12 @@
             <Setter Property="RenderTransform" Value="translate(0px, 0px)" />
             <Setter Property="Transitions">
                 <Transitions>
-                    <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.15" />
+                    <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.1" />
                 </Transitions>
             </Setter>
         </Style>
         <Style Selector="LayoutTransformControl.rivalCard.picking">
-            <Setter Property="RenderTransform" Value="translate(22px, 0px)" />
+            <Setter Property="RenderTransform" Value="translate(36px, 0px)" />
         </Style>
 
         <!-- Tamaños de carta por zona -->
