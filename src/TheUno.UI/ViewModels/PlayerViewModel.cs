@@ -14,6 +14,7 @@ public partial class PlayerViewModel : ViewModelBase
 {
     /// <summary>Indica si es el turno de este jugador: su zona se resalta y su mano se habilita.</summary>
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(DisplayName))]
     private bool _isActive;
 
     /// <summary>Indica si el jugador ya cantó UNO; junto a su nombre aparece la etiqueta "¡UNO!".</summary>
@@ -40,6 +41,12 @@ public partial class PlayerViewModel : ViewModelBase
     }
 
     public string Name { get; }
+
+    /// <summary>
+    /// Nombre como se ve en la mesa: en su turno va en mayúsculas ("TONA"), y al terminar
+    /// regresa a como se escribe ("Tona"). El color y el tamaño los pone BoardView.axaml.
+    /// </summary>
+    public string DisplayName => IsActive ? Name.ToUpperInvariant() : Name;
 
     public ObservableCollection<CardViewModel> Hand { get; } = new();
 

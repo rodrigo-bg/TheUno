@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
-using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -246,16 +245,9 @@ public partial class StatsViewModel : ViewModelBase
             GameActionType.PassTurn => $"{name} pasó el turno",
             GameActionType.CallUno => $"{name} cantó UNO",
             GameActionType.UnoPenalty => $"{name} no cantó UNO y recibió 2 cartas",
-            GameActionType.GameOver => DescribeGameOver(name, log.CardDetails),
+            GameActionType.GameOver => $"Gana {name}",
             _ => $"{name}: {log.CardDetails}"
         };
-    }
-
-    // El motor guarda "Victoria con 125 puntos"
-    private static string DescribeGameOver(string name, string details)
-    {
-        var points = Regex.Match(details, @"\d+");
-        return points.Success ? $"{name} ganó la partida con {points.Value} puntos" : $"{name} ganó la partida";
     }
 
     // El motor guarda las cartas en inglés: "Red 7", "Blue Skip", "Green DrawTwo", "Wild", "Wild Draw 4 (+4)"

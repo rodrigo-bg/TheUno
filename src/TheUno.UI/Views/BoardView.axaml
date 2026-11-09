@@ -83,10 +83,22 @@
             </Setter>
         </Style>
         <!-- Va después de pixelText para que el amarillo del turno activo gane sobre el blanco -->
-        <!-- y su nombre se ve 1.5 veces más grande (14 → 21); al acabar su turno regresa al tamaño normal -->
+        <!-- y su nombre se ve 1.3 veces más grande (14 → 18); al acabar su turno regresa al tamaño normal -->
         <Style Selector="Border.playerZone.active TextBlock.playerName">
             <Setter Property="Foreground" Value="#E6B400" />
-            <Setter Property="FontSize" Value="21" />
+            <Setter Property="FontSize" Value="18" />
+        </Style>
+
+        <!-- Aviso de jugada: se ve completo casi 2 segundos y luego se desvanece poco a poco.
+             La duración total (2.5 s) es la misma que usa BoardViewModel. -->
+        <Style Selector="Border.specialNotice.shown">
+            <Style.Animations>
+                <Animation Duration="0:0:2.5">
+                    <KeyFrame Cue="0%"><Setter Property="Opacity" Value="1" /></KeyFrame>
+                    <KeyFrame Cue="70%"><Setter Property="Opacity" Value="1" /></KeyFrame>
+                    <KeyFrame Cue="100%"><Setter Property="Opacity" Value="0" /></KeyFrame>
+                </Animation>
+            </Style.Animations>
         </Style>
         <Style Selector="TextBlock.zoneLabel">
             <Setter Property="FontSize" Value="10" />
@@ -195,12 +207,12 @@
             <Setter Property="RenderTransform" Value="translate(0px, 0px)" />
             <Setter Property="Transitions">
                 <Transitions>
-                    <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.1" />
+                    <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.15" />
                 </Transitions>
             </Setter>
         </Style>
         <Style Selector="LayoutTransformControl.rivalCard.picking">
-            <Setter Property="RenderTransform" Value="translate(36px, 0px)" />
+            <Setter Property="RenderTransform" Value="translate(22px, 0px)" />
         </Style>
 
         <!-- Tamaños de carta por zona -->
@@ -399,7 +411,7 @@
                     Classes.active="{Binding Player2.IsActive}">
                 <DockPanel>
                     <StackPanel DockPanel.Dock="Top" Classes="playerHeader">
-                        <TextBlock Classes="pixelText playerName" Text="{Binding Player2.Name}" />
+                        <TextBlock Classes="pixelText playerName" Text="{Binding Player2.DisplayName}" />
                         <Border Classes="unoTag" IsVisible="{Binding Player2.HasCalledUno}">
                             <TextBlock Text="¡UNO!" />
                         </Border>
@@ -433,7 +445,7 @@
                     Classes.active="{Binding Player3.IsActive}">
                 <DockPanel>
                     <StackPanel DockPanel.Dock="Top" Classes="playerHeader">
-                        <TextBlock Classes="pixelText playerName" Text="{Binding Player3.Name}" />
+                        <TextBlock Classes="pixelText playerName" Text="{Binding Player3.DisplayName}" />
                         <Border Classes="unoTag" IsVisible="{Binding Player3.HasCalledUno}">
                             <TextBlock Text="¡UNO!" />
                         </Border>
@@ -536,30 +548,32 @@
                 </StackPanel>
             </Grid>
 
-            <!-- Aviso de carta especial (+2, +4, saltar o reversa): lo ven todos unos segundos, arriba
-                 de las pilas para no tapar la carta que se tiró. No bloquea los clics. -->
+            <!-- Aviso de jugada (+2, +4, saltar, reversa, cantó UNO o no lo cantó): lo ven todos unos
+                 segundos, arriba de las pilas para no tapar la carta que se tiró. No bloquea los clics. -->
             <Border Grid.Row="1" Grid.Column="1"
+                    Classes="specialNotice"
+                    Classes.shown="{Binding IsSpecialCardNoticeOpen}"
                     IsVisible="{Binding IsSpecialCardNoticeOpen}"
                     IsHitTestVisible="False"
                     Background="#3A2213"
                     BorderBrush="Black"
-                    BorderThickness="5"
-                    Padding="24,14"
+                    BorderThickness="4"
+                    Padding="14,8"
                     HorizontalAlignment="Center"
                     VerticalAlignment="Top"
                     Margin="0,4,0,0"
-                    BoxShadow="8 8 0 0 #000000">
-                <StackPanel Spacing="10">
+                    BoxShadow="5 5 0 0 #000000">
+                <StackPanel Spacing="6">
                     <TextBlock Classes="pixelText"
-                               FontSize="22"
+                               FontSize="15"
                                Foreground="#E6B400"
                                Text="{Binding SpecialCardTitle}">
                         <TextBlock.Effect>
-                            <DropShadowEffect OffsetX="3" OffsetY="3" BlurRadius="0" Color="Black" Opacity="1" />
+                            <DropShadowEffect OffsetX="2" OffsetY="2" BlurRadius="0" Color="Black" Opacity="1" />
                         </TextBlock.Effect>
                     </TextBlock>
                     <TextBlock Classes="pixelText"
-                               FontSize="12"
+                               FontSize="9"
                                Text="{Binding SpecialCardDetail}">
                         <TextBlock.Effect>
                             <DropShadowEffect OffsetX="2" OffsetY="2" BlurRadius="0" Color="Black" Opacity="1" />
@@ -615,7 +629,7 @@
                     Height="220">
                 <DockPanel>
                     <StackPanel DockPanel.Dock="Top" Classes="playerHeader">
-                        <TextBlock Classes="pixelText playerName" Text="{Binding Player1.Name}" />
+                        <TextBlock Classes="pixelText playerName" Text="{Binding Player1.DisplayName}" />
                         <Border Classes="unoTag" IsVisible="{Binding Player1.HasCalledUno}">
                             <TextBlock Text="¡UNO!" />
                         </Border>
@@ -634,27 +648,6 @@
                 </DockPanel>
             </Border>
         </Grid>
-
-        <!-- Aviso de penalización por no cantar UNO: aparece unos segundos al centro de la mesa.
-             No bloquea los clics, el juego sigue mientras se ve. -->
-        <Border IsVisible="{Binding IsPenaltyNoticeOpen}"
-                IsHitTestVisible="False"
-                Background="#3A2213"
-                BorderBrush="Black"
-                BorderThickness="6"
-                Padding="32,24"
-                HorizontalAlignment="Center"
-                VerticalAlignment="Center"
-                BoxShadow="10 10 0 0 #000000">
-            <TextBlock Classes="pixelText"
-                       FontSize="20"
-                       Foreground="#FF0000"
-                       Text="{Binding PenaltyMessage}">
-                <TextBlock.Effect>
-                    <DropShadowEffect OffsetX="3" OffsetY="3" BlurRadius="0" Color="Black" Opacity="1" />
-                </TextBlock.Effect>
-            </TextBlock>
-        </Border>
 
         <!-- Selector de color para comodines: 4 cuadrantes en el mismo orden que el dibujo del comodín.
              No tiene botón de cancelar porque el juego no puede seguir sin un color. -->
