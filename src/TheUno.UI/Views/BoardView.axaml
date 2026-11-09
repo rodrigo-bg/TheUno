@@ -502,6 +502,38 @@
                 </StackPanel>
             </Grid>
 
+            <!-- Aviso de carta especial (+2, +4, saltar o reversa): lo ven todos unos segundos, arriba
+                 de las pilas para no tapar la carta que se tiró. No bloquea los clics. -->
+            <Border Grid.Row="1" Grid.Column="1"
+                    IsVisible="{Binding IsSpecialCardNoticeOpen}"
+                    IsHitTestVisible="False"
+                    Background="#3A2213"
+                    BorderBrush="Black"
+                    BorderThickness="5"
+                    Padding="24,14"
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Top"
+                    Margin="0,4,0,0"
+                    BoxShadow="8 8 0 0 #000000">
+                <StackPanel Spacing="10">
+                    <TextBlock Classes="pixelText"
+                               FontSize="22"
+                               Foreground="#E6B400"
+                               Text="{Binding SpecialCardTitle}">
+                        <TextBlock.Effect>
+                            <DropShadowEffect OffsetX="3" OffsetY="3" BlurRadius="0" Color="Black" Opacity="1" />
+                        </TextBlock.Effect>
+                    </TextBlock>
+                    <TextBlock Classes="pixelText"
+                               FontSize="12"
+                               Text="{Binding SpecialCardDetail}">
+                        <TextBlock.Effect>
+                            <DropShadowEffect OffsetX="2" OffsetY="2" BlurRadius="0" Color="Black" Opacity="1" />
+                        </TextBlock.Effect>
+                    </TextBlock>
+                </StackPanel>
+            </Border>
+
             <!-- Botones ¡UNO!: uno por jugador, frente a sus cartas (hacia el centro de la mesa).
                  Solo aparecen durante los 2 segundos que siguen a tirar su penúltima carta.
                  Los de los jugadores 2 y 3 quedan a la altura de su única carta. -->

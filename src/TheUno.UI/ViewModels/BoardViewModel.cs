@@ -21,6 +21,9 @@ public partial class BoardViewModel : ViewModelBase
     // Tiempo que se ve el aviso de penalización por no cantar UNO
     private static readonly TimeSpan PenaltyNoticeDuration = TimeSpan.FromSeconds(2.5);
 
+    // Tiempo que se ve el aviso de una carta especial (+2, +4, saltar o reversa)
+    private static readonly TimeSpan SpecialCardNoticeDuration = TimeSpan.FromSeconds(2.5);
+
     // Pausa antes de la pantalla final, para que se vea la última carta en la mesa
     private static readonly TimeSpan VictoryDelay = TimeSpan.FromSeconds(1.5);
 
@@ -61,6 +64,9 @@ public partial class BoardViewModel : ViewModelBase
     // Cuenta los avisos de penalización: si sale otro antes de que se oculte el primero,
     // el temporizador del primero ya no lo oculta.
     private int _penaltyNoticeCount;
+
+    // Igual, para el aviso de cartas especiales
+    private int _specialCardNoticeCount;
 
     // Animación del rival en turno: su temporizador y la carta que tiene asomada
     private DispatcherTimer? _pickingTimer;
@@ -116,6 +122,18 @@ public partial class BoardViewModel : ViewModelBase
     /// <summary>Texto del aviso, por ejemplo "¡JUGADOR 2 NO CANTÓ UNO! +2".</summary>
     [ObservableProperty]
     private string _penaltyMessage = string.Empty;
+
+    /// <summary>Muestra a todos el aviso de que alguien tiró un +2, +4, saltar o reversa.</summary>
+    [ObservableProperty]
+    private bool _isSpecialCardNoticeOpen;
+
+    /// <summary>Carta que se tiró, en grande: "+2", "+4", "SALTAR" o "REVERSA".</summary>
+    [ObservableProperty]
+    private string _specialCardTitle = string.Empty;
+
+    /// <summary>Qué provoca, por ejemplo "Alejandro roba 2 y pierde su turno".</summary>
+    [ObservableProperty]
+    private string _specialCardDetail = string.Empty;
 
     /// <summary>Muestra la alerta que confirma si se quiere abandonar la partida.</summary>
     [ObservableProperty]
@@ -271,6 +289,8 @@ public partial class BoardViewModel : ViewModelBase
     /// <summary>Dibuja la mesa tal como la mandó el servidor.</summary>
     private void ApplyState(GameStateDto state)
     {
+        // Antes del sonido, porque los dos comparan contra la carta que había arriba
+        ShowSpecialCardNoticeIfNeeded(state);
         PlayCardSoundIfNeeded(state);
 
         Player1.SyncHand(state.MyHand.Select(c => c.ToCard()).ToList(), state.PlayableCardIds);
@@ -301,6 +321,41 @@ public partial class BoardViewModel : ViewModelBase
 
         _lastTopCardId = state.TopCard.Id;
         _lastCardTotal = cardTotal;
+    }
+
+    /// <summary>
+    /// Si se acaba de tirar un +2, +4, saltar o reversa, avisa a todos unos segundos.
+    /// Con 3 jugadores, el que pierde el turno es el que no tiró la carta ni tiene el turno nuevo.
+    /// </summary>
+    private void ShowSpecialCardNoticeIfNeeded(GameStateDto state)
+    {
+        if (state.TopCard.Id == _lastTopCardId) return;
+
+        // ActivePlayer todavía es quien tiró: el turno nuevo se aplica después
+        var victim = state.Players
+            .Select(p => p.Name)
+            .FirstOrDefault(name => name != ActivePlayer.Name && name != state.CurrentPlayerName)
+            ?? "El siguiente";
+
+        (string Title, string Detail)? notice = state.TopCard.Type switch
+        {
+            CardType.DrawTwo => ("+2", $"{victim} roba 2 y pierde su turno"),
+            CardType.WildDrawFour => ("+4", $"{victim} roba 4 y pierde su turno"),
+            CardType.Skip => ("SALTAR", $"{victim} pierde su turno"),
+            CardType.Reverse => ("REVERSA", "Cambia el sentido del juego"),
+            _ => null
+        };
+        if (notice is null) return;
+
+        SpecialCardTitle = notice.Value.Title;
+        SpecialCardDetail = notice.Value.Detail;
+        IsSpecialCardNoticeOpen = true;
+
+        var count = ++_specialCardNoticeCount;
+        DispatcherTimer.RunOnce(() =>
+        {
+            if (count == _specialCardNoticeCount) IsSpecialCardNoticeOpen = false;
+        }, SpecialCardNoticeDuration);
     }
 
     private PlayerViewModel GetPlayerViewModel(string name)
