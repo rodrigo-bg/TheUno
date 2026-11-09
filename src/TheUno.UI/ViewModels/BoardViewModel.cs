@@ -347,12 +347,10 @@ public partial class BoardViewModel : ViewModelBase
     {
         if (state.TopCard.Id == _lastTopCardId) return;
 
-        // ActivePlayer todavía es quien tiró: el turno nuevo se aplica después.
-        // En mayúsculas, igual que los nombres de la mesa.
+        // ActivePlayer todavía es quien tiró: el turno nuevo se aplica después
         var victim = state.Players
             .Select(p => p.Name)
             .FirstOrDefault(name => name != ActivePlayer.Name && name != state.CurrentPlayerName)
-            ?.ToUpperInvariant()
             ?? "El siguiente";
 
         (string Title, string Detail)? notice = state.TopCard.Type switch
