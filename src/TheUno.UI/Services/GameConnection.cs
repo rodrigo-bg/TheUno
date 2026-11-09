@@ -12,7 +12,8 @@ namespace TheUno.UI.Services;
 /// </summary>
 public sealed class GameConnection : IAsyncDisposable
 {
-    public const int DefaultPort = 5000;
+    // 5050 y no 5000: en macOS el 5000 lo ocupa el Receptor AirPlay
+    public const int DefaultPort = 5050;
     public const string HubPath = "/gamehub";
 
     // Si la IP no responde en este tiempo se avisa al jugador en lugar de esperar al sistema
@@ -26,8 +27,8 @@ public sealed class GameConnection : IAsyncDisposable
     public bool IsConnected => _connection?.State == HubConnectionState.Connected;
 
     /// <summary>
-    /// Se conecta al servidor. Acepta solo la IP ("192.168.1.50"), IP y puerto ("192.168.1.50:5000")
-    /// o la dirección completa ("http://192.168.1.50:5000/gamehub").
+    /// Se conecta al servidor. Acepta solo la IP ("192.168.1.50"), IP y puerto ("192.168.1.50:5050")
+    /// o la dirección completa ("http://192.168.1.50:5050/gamehub").
     /// Lanza una excepción si el servidor no responde.
     /// </summary>
     public async Task ConnectAsync(string serverAddress)
