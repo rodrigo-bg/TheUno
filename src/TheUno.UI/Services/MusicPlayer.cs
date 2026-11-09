@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Runtime.Versioning;
+using System.Threading.Tasks;
 using NAudio.Wave;
 using NAudio.Wave.SampleProviders;
 
@@ -31,6 +32,7 @@ public sealed class MusicPlayer : IDisposable
 
     // macOS
     private Process? _afplay;
+    private bool _isPaused;
 
     public MusicPlayer(int volume = 30)
     {
@@ -46,7 +48,11 @@ public sealed class MusicPlayer : IDisposable
             _isMuted = value;
             Control("silenciar",
                 () => { if (_volumeProvider is not null) _volumeProvider.Volume = CurrentVolume; },
-                value ? "-STOP" : "-CONT");
+                () =>
+                {
+                    if (value) StopMac();
+                    else if (!_isPaused && _currentTrack is not null) StartMac();
+                });
         }
     }
 
@@ -57,6 +63,7 @@ public sealed class MusicPlayer : IDisposable
     {
         if (track == _currentTrack) return;
 
+        _isPaused = false;
         Stop();
         _currentTrack = track;
         _musicPath = Path.Combine(AudioFolder, track);
@@ -84,16 +91,27 @@ public sealed class MusicPlayer : IDisposable
     /// Pausa la canción actual sin perder por dónde iba (por ejemplo, mientras suena victoria o derrota).
     /// Si mientras tanto se cambia de canción, la nueva suena normal.
     /// </summary>
-    public void Pause() => Control("pausar", () => _output?.Pause(), "-STOP");
+    public void Pause()
+    {
+        _isPaused = true;
+        Control("pausar", () => _output?.Pause(), StopMac);
+    }
 
     /// <summary>Sigue la canción desde donde se pausó (en silencio, macOS la deja detenida).</summary>
-    public void Resume() => Control("reanudar", () => _output?.Play(), _isMuted ? null : "-CONT");
+    public void Resume()
+    {
+        _isPaused = false;
+        Control("reanudar", () => _output?.Play(), () =>
+        {
+            if (!_isMuted && _currentTrack is not null && _afplay is null) StartMac();
+        });
+    }
 
     /// <summary>
-    /// Aplica un cambio a la canción que suena: en Windows con NAudio y en macOS mandándole
-    /// una señal a afplay. Si falla, el juego sigue sin ese cambio.
+    /// Aplica un cambio a la canción que suena: en Windows con NAudio y en macOS controlando afplay.
+    /// Si falla, el juego sigue sin ese cambio.
     /// </summary>
-    private void Control(string action, Action onWindows, string? macSignal)
+    private void Control(string action, Action onWindows, Action onMac)
     {
         try
         {
@@ -101,23 +119,15 @@ public sealed class MusicPlayer : IDisposable
             {
                 onWindows();
             }
-            else if (macSignal is not null)
+            else if (OperatingSystem.IsMacOS())
             {
-                SignalMac(macSignal);
+                onMac();
             }
         }
         catch (Exception ex)
         {
             Debug.WriteLine($"No se pudo {action} la música: {ex.Message}");
         }
-    }
-
-    // afplay no tiene pausa: se detiene y se continúa el proceso con kill -STOP / -CONT
-    private void SignalMac(string signal)
-    {
-        if (_afplay is not { } afplay) return;
-
-        Process.Start("kill", new[] { signal, afplay.Id.ToString(CultureInfo.InvariantCulture) })?.Dispose();
     }
 
     [SupportedOSPlatform("windows")]
@@ -145,6 +155,9 @@ public sealed class MusicPlayer : IDisposable
 
     private void StartMac()
     {
+        StopMac();
+        if (_isMuted || _isPaused || string.IsNullOrEmpty(_musicPath)) return;
+
         var info = new ProcessStartInfo("afplay")
         {
             UseShellExecute = false,
@@ -161,15 +174,43 @@ public sealed class MusicPlayer : IDisposable
         process.Exited += (_, _) =>
         {
             process.Dispose();
-            if (_afplay == process)
+            if (_afplay == process && !_isMuted && !_isPaused && _currentTrack is not null)
             {
                 StartMac();
             }
         };
 
         _afplay = process;
-        process.Start();
-        if (_isMuted) SignalMac("-STOP");
+        _ = Task.Run(() =>
+        {
+            try
+            {
+                process.Start();
+            }
+            catch (Exception)
+            {
+                // Ignorar si se detuvo antes de arrancar
+            }
+        });
+    }
+
+    private void StopMac()
+    {
+        var afplay = _afplay;
+        _afplay = null;
+        if (afplay is null) return;
+
+        _ = Task.Run(() =>
+        {
+            try
+            {
+                afplay.Kill();
+            }
+            catch (Exception)
+            {
+                // El proceso ya había terminado.
+            }
+        });
     }
 
     private void Stop()
@@ -180,16 +221,9 @@ public sealed class MusicPlayer : IDisposable
         {
             StopWindows();
         }
-
-        var afplay = _afplay;
-        _afplay = null;
-        try
+        else if (OperatingSystem.IsMacOS())
         {
-            afplay?.Kill();
-        }
-        catch (Exception)
-        {
-            // El proceso ya había terminado.
+            StopMac();
         }
     }
 

@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Runtime.Versioning;
+using System.Threading.Tasks;
 using Avalonia.Threading;
 using NAudio.Wave;
 using NAudio.Wave.SampleProviders;
@@ -173,7 +174,18 @@ public sealed class SoundEffects : IDisposable
             process.Dispose();
             finished?.Invoke();
         };
-        process.Start();
+        _ = Task.Run(() =>
+        {
+            try
+            {
+                process.Start();
+            }
+            catch (Exception)
+            {
+                process.Dispose();
+                finished?.Invoke();
+            }
+        });
     }
 
     public void Dispose()

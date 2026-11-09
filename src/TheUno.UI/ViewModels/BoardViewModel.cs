@@ -549,10 +549,10 @@ public partial class BoardViewModel : ViewModelBase
     private void CancelExit() => IsExitDialogOpen = false;
 
     [RelayCommand]
-    private async Task ConfirmExitAsync()
+    private void ConfirmExit()
     {
         IsExitDialogOpen = false;
-        await LeaveAsync();
+        LeaveInBackground();
         _goToMenu();
     }
 
@@ -579,18 +579,30 @@ public partial class BoardViewModel : ViewModelBase
         IsInterruptedNoticeOpen = true;
     }
 
-    private async Task LeaveAsync()
+    private void LeaveInBackground()
     {
-        StopPickingAnimation();
+        CloseUnoWindow();
+        if (_session is null) return;
 
-        try
+        _session.StateChanged -= ApplyState;
+        _session.UnoWindowOpened -= OnUnoWindowOpened;
+        _session.UnoPenalty -= OnUnoPenalty;
+        _session.GameOver -= OnGameOver;
+        _session.PlayerLeft -= OnPlayerLeft;
+        _session.ConnectionLost -= OnConnectionLost;
+
+        var session = _session;
+        _ = Task.Run(async () =>
         {
-            if (_session is not null) await _session.LeaveAsync();
-        }
-        catch (Exception)
-        {
-            // Si el servidor ya no está, igual se sale de la partida
-        }
+            try
+            {
+                await session.LeaveAsync();
+            }
+            catch (Exception)
+            {
+                // Si el servidor ya no está, igual se sale de la partida
+            }
+        });
     }
 
     // ---------- Victoria ----------
@@ -642,16 +654,16 @@ public partial class BoardViewModel : ViewModelBase
     }
 
     [RelayCommand]
-    private async Task BackToMenuAsync()
+    private void BackToMenu()
     {
-        await LeaveAsync();
+        LeaveInBackground();
         _goToMenu();
     }
 
     [RelayCommand]
-    private async Task PlayAgainAsync()
+    private void PlayAgain()
     {
-        await LeaveAsync();
+        LeaveInBackground();
         _startNewGame();
     }
 }
