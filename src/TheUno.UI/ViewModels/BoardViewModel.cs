@@ -24,6 +24,9 @@ public partial class BoardViewModel : ViewModelBase
     // Pausa antes de la pantalla final, para que se vea la última carta en la mesa
     private static readonly TimeSpan VictoryDelay = TimeSpan.FromSeconds(1.5);
 
+    // Cada cuánto el rival en turno cambia la carta que se asoma, como si estuviera eligiendo
+    private static readonly TimeSpan PickingInterval = TimeSpan.FromMilliseconds(500);
+
     // Color activo con la paleta de las cartas 8 bits; se crean una sola vez
     private static readonly IBrush NoColorBrush = new SolidColorBrush(Color.Parse("#555555"));
     private static readonly Dictionary<CardColor, IBrush> ColorBrushes = new()
@@ -58,6 +61,10 @@ public partial class BoardViewModel : ViewModelBase
     // Cuenta los avisos de penalización: si sale otro antes de que se oculte el primero,
     // el temporizador del primero ya no lo oculta.
     private int _penaltyNoticeCount;
+
+    // Animación del rival en turno: su temporizador y la carta que tiene asomada
+    private DispatcherTimer? _pickingTimer;
+    private CardViewModel? _pickingCard;
 
     // ---------- Estado de la mesa ----------
 
@@ -184,6 +191,9 @@ public partial class BoardViewModel : ViewModelBase
             session.GameOver += OnGameOver;
             session.PlayerLeft += OnPlayerLeft;
             session.ConnectionLost += OnConnectionLost;
+
+            _pickingTimer = new DispatcherTimer(PickingInterval, DispatcherPriority.Normal, OnPickingTick);
+            _pickingTimer.Start();
         }
     }
 
@@ -224,6 +234,38 @@ public partial class BoardViewModel : ViewModelBase
     {
         if (oldValue is not null) oldValue.IsActive = false;
         newValue.IsActive = true;
+        LowerPickingCard();
+    }
+
+    /// <summary>
+    /// El rival en turno asoma otra de sus cartas boca abajo, como si estuviera eligiendo.
+    /// En el turno de esta compu no se mueve nada.
+    /// </summary>
+    private void OnPickingTick(object? sender, EventArgs e)
+    {
+        var previous = _pickingCard;
+        LowerPickingCard();
+        if (ActivePlayer == Player1 || _isGameOver) return;
+
+        // Siempre una distinta a la anterior; con una sola carta, sube y baja
+        var candidates = ActivePlayer.Hand.Where(c => c != previous).ToList();
+        if (candidates.Count == 0) return;
+
+        _pickingCard = candidates[Random.Shared.Next(candidates.Count)];
+        _pickingCard.IsPicking = true;
+    }
+
+    private void LowerPickingCard()
+    {
+        if (_pickingCard is not null) _pickingCard.IsPicking = false;
+        _pickingCard = null;
+    }
+
+    private void StopPickingAnimation()
+    {
+        _pickingTimer?.Stop();
+        _pickingTimer = null;
+        LowerPickingCard();
     }
 
     /// <summary>Dibuja la mesa tal como la mandó el servidor.</summary>
@@ -445,6 +487,8 @@ public partial class BoardViewModel : ViewModelBase
 
     private async Task LeaveAsync()
     {
+        StopPickingAnimation();
+
         try
         {
             if (_session is not null) await _session.LeaveAsync();
@@ -495,6 +539,7 @@ public partial class BoardViewModel : ViewModelBase
     {
         if (_isGameOver) return false;
         _isGameOver = true;
+        StopPickingAnimation();
 
         CanDraw = false;
         CanPassTurn = false;

@@ -186,6 +186,21 @@
             <Setter Property="RenderTransform" Value="translate(0px, -14px)" />
         </Style>
 
+        <!-- Rival en turno "eligiendo": la carta que tiene asomada se mueve hacia el centro de la mesa.
+             Va en el control que gira la carta (y no dentro) para que no se recorte. En la mano del
+             Jugador 3 todo está girado 180°, así que el mismo movimiento también apunta al centro. -->
+        <Style Selector="LayoutTransformControl.rivalCard">
+            <Setter Property="RenderTransform" Value="translate(0px, 0px)" />
+            <Setter Property="Transitions">
+                <Transitions>
+                    <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.15" />
+                </Transitions>
+            </Setter>
+        </Style>
+        <Style Selector="LayoutTransformControl.rivalCard.picking">
+            <Setter Property="RenderTransform" Value="translate(22px, 0px)" />
+        </Style>
+
         <!-- Tamaños de carta por zona -->
         <Style Selector="ItemsControl.bottomHand Border.card">
             <Setter Property="Width" Value="80" />
@@ -369,7 +384,9 @@
                             </ItemsControl.ItemsPanel>
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate DataType="vm:CardViewModel">
-                                    <LayoutTransformControl LayoutTransform="rotate(90deg)">
+                                    <LayoutTransformControl Classes="rivalCard"
+                                                            Classes.picking="{Binding IsPicking}"
+                                                            LayoutTransform="rotate(90deg)">
                                         <ContentControl Content="{Binding}" />
                                     </LayoutTransformControl>
                                 </DataTemplate>
@@ -403,7 +420,9 @@
                             </ItemsControl.ItemsPanel>
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate DataType="vm:CardViewModel">
-                                    <LayoutTransformControl LayoutTransform="rotate(90deg)">
+                                    <LayoutTransformControl Classes="rivalCard"
+                                                            Classes.picking="{Binding IsPicking}"
+                                                            LayoutTransform="rotate(90deg)">
                                         <ContentControl Content="{Binding}" />
                                     </LayoutTransformControl>
                                 </DataTemplate>
