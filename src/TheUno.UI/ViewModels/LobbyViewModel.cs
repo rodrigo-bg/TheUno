@@ -295,19 +295,23 @@ public partial class LobbyViewModel : ViewModelBase
     // ---------- Salir ----------
 
     [RelayCommand]
-    private async Task BackToMenuAsync()
+    private void BackToMenu()
     {
         if (_lobby is not null)
         {
             StopListening();
-            try
+            var lobby = _lobby;
+            _ = Task.Run(async () =>
             {
-                await _lobby.LeaveAsync();
-            }
-            catch (Exception)
-            {
-                // Si el servidor ya no está, igual se regresa al menú
-            }
+                try
+                {
+                    await lobby.LeaveAsync();
+                }
+                catch (Exception)
+                {
+                    // Si el servidor ya no está, igual se regresa al menú
+                }
+            });
         }
 
         _goToMenu();

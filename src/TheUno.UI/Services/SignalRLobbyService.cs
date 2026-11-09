@@ -56,8 +56,16 @@ public sealed class SignalRLobbyService : ILobbyService
         SetJoinedPlayers(await _connection.InvokeAsync<List<string>>(HubMethods.GetTakenPlayers));
     }
 
-    public Task<bool> ChoosePlayerAsync(string playerName) =>
-        _connection.InvokeAsync<bool>(HubMethods.ChoosePlayer, playerName);
+    public async Task<bool> ChoosePlayerAsync(string playerName)
+    {
+        var chosen = await _connection.InvokeAsync<bool>(HubMethods.ChoosePlayer, playerName);
+        if (chosen)
+        {
+            SetJoinedPlayers(await _connection.InvokeAsync<List<string>>(HubMethods.GetTakenPlayers));
+        }
+
+        return chosen;
+    }
 
     public Task StartGameAsync() => _connection.InvokeAsync(HubMethods.StartGame);
 
