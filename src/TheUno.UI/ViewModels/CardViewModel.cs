@@ -21,6 +21,13 @@ public partial class CardViewModel : ViewModelBase
     [ObservableProperty]
     private bool _isPlayable;
 
+    /// <summary>
+    /// Carta boca abajo de un rival que se asoma hacia el centro mientras él "elige" en su turno.
+    /// Es solo animación: no tiene que ver con la carta que va a tirar.
+    /// </summary>
+    [ObservableProperty]
+    private bool _isPicking;
+
     public CardViewModel(Card card)
     {
         Card = card;

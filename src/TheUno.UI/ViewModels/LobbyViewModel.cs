@@ -22,6 +22,8 @@ public partial class LobbyViewModel : ViewModelBase
     /// </summary>
     public static readonly string[] PlayerNames = { "Rodri", "Tona", "Alejandro" };
 
+    private const string ConnectionLostMessage = "Se perdió la conexión con el servidor";
+
     // Solo es null en el diseñador de Rider/Avalonia
     private readonly ILobbyService? _lobby;
     private readonly Action _goToMenu;
@@ -128,6 +130,7 @@ public partial class LobbyViewModel : ViewModelBase
 
     // ---------- Unirse ----------
 
+    /// <summary>Se conecta a la IP escrita; si funciona, la recuerda para el historial.</summary>
     [RelayCommand(CanExecute = nameof(CanConnect))]
     private async Task ConnectAsync()
     {
@@ -156,6 +159,7 @@ public partial class LobbyViewModel : ViewModelBase
 
     // ---------- Elegir jugador ----------
 
+    /// <summary>Entra a la sala con el jugador elegido. Quien crea la partida la abre en este momento.</summary>
     [RelayCommand(CanExecute = nameof(CanChoosePlayer))]
     private async Task ChoosePlayerAsync(PlayerOption option)
     {
@@ -230,7 +234,7 @@ public partial class LobbyViewModel : ViewModelBase
             option.IsTaken = false;
         }
 
-        ShowStatus("Se perdió la conexión con el servidor", isError: true);
+        ShowStatus(ConnectionLostMessage, isError: true);
     }
 
     // ---------- Sala de conexión ----------
@@ -273,7 +277,7 @@ public partial class LobbyViewModel : ViewModelBase
         }
         catch (Exception)
         {
-            ShowStatus("Se perdió la conexión con el servidor", isError: true);
+            ShowStatus(ConnectionLostMessage, isError: true);
         }
         finally
         {

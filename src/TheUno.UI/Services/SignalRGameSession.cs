@@ -12,6 +12,7 @@ public sealed class SignalRGameSession : IGameSession
 {
     private readonly GameConnection _connection;
 
+    /// <summary>Escucha cada mensaje del servidor y lo pasa como evento de la sesión.</summary>
     public SignalRGameSession(GameConnection connection)
     {
         _connection = connection;
@@ -43,6 +44,7 @@ public sealed class SignalRGameSession : IGameSession
 
     public Task CallUnoAsync() => _connection.InvokeAsync(HubMethods.CallUno);
 
+    /// <summary>Avisa al servidor que se va y cierra la conexión, aunque el aviso falle.</summary>
     public async Task LeaveAsync()
     {
         try
@@ -55,6 +57,7 @@ public sealed class SignalRGameSession : IGameSession
         }
     }
 
+    // Guarda la última mesa para que el tablero pueda abrir con ella
     private void OnStateChanged(GameStateDto state)
     {
         State = state;

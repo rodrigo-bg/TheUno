@@ -83,8 +83,10 @@
             </Setter>
         </Style>
         <!-- Va después de pixelText para que el amarillo del turno activo gane sobre el blanco -->
+        <!-- y su nombre se ve 1.5 veces más grande (14 → 21); al acabar su turno regresa al tamaño normal -->
         <Style Selector="Border.playerZone.active TextBlock.playerName">
             <Setter Property="Foreground" Value="#E6B400" />
+            <Setter Property="FontSize" Value="21" />
         </Style>
         <Style Selector="TextBlock.zoneLabel">
             <Setter Property="FontSize" Value="10" />
@@ -186,6 +188,21 @@
             <Setter Property="RenderTransform" Value="translate(0px, -14px)" />
         </Style>
 
+        <!-- Rival en turno "eligiendo": la carta que tiene asomada se mueve hacia el centro de la mesa.
+             Va en el control que gira la carta (y no dentro) para que no se recorte. En la mano del
+             Jugador 3 todo está girado 180°, así que el mismo movimiento también apunta al centro. -->
+        <Style Selector="LayoutTransformControl.rivalCard">
+            <Setter Property="RenderTransform" Value="translate(0px, 0px)" />
+            <Setter Property="Transitions">
+                <Transitions>
+                    <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.1" />
+                </Transitions>
+            </Setter>
+        </Style>
+        <Style Selector="LayoutTransformControl.rivalCard.picking">
+            <Setter Property="RenderTransform" Value="translate(36px, 0px)" />
+        </Style>
+
         <!-- Tamaños de carta por zona -->
         <Style Selector="ItemsControl.bottomHand Border.card">
             <Setter Property="Width" Value="80" />
@@ -202,6 +219,36 @@
         </Style>
         <Style Selector="Canvas.directionArrow.counterClockwise">
             <Setter Property="RenderTransform" Value="scaleX(-1)" />
+        </Style>
+
+        <!-- Al cambiar la dirección, la flecha y su texto se ponen amarillos 1 segundo y luego se
+             desvanecen poco a poco a blanco. La duración total (1.6 s) es la misma que usa BoardViewModel. -->
+        <Style Selector="StackPanel.directionIndicator.highlighted Path.arrowLine">
+            <Style.Animations>
+                <Animation Duration="0:0:1.6">
+                    <KeyFrame Cue="0%"><Setter Property="Stroke" Value="#E6B400" /></KeyFrame>
+                    <KeyFrame Cue="62%"><Setter Property="Stroke" Value="#E6B400" /></KeyFrame>
+                    <KeyFrame Cue="100%"><Setter Property="Stroke" Value="White" /></KeyFrame>
+                </Animation>
+            </Style.Animations>
+        </Style>
+        <Style Selector="StackPanel.directionIndicator.highlighted Path.arrowHead">
+            <Style.Animations>
+                <Animation Duration="0:0:1.6">
+                    <KeyFrame Cue="0%"><Setter Property="Fill" Value="#E6B400" /></KeyFrame>
+                    <KeyFrame Cue="62%"><Setter Property="Fill" Value="#E6B400" /></KeyFrame>
+                    <KeyFrame Cue="100%"><Setter Property="Fill" Value="White" /></KeyFrame>
+                </Animation>
+            </Style.Animations>
+        </Style>
+        <Style Selector="StackPanel.directionIndicator.highlighted TextBlock.zoneLabel">
+            <Style.Animations>
+                <Animation Duration="0:0:1.6">
+                    <KeyFrame Cue="0%"><Setter Property="Foreground" Value="#E6B400" /></KeyFrame>
+                    <KeyFrame Cue="62%"><Setter Property="Foreground" Value="#E6B400" /></KeyFrame>
+                    <KeyFrame Cue="100%"><Setter Property="Foreground" Value="White" /></KeyFrame>
+                </Animation>
+            </Style.Animations>
         </Style>
 
         <!-- Botón para regresar al menú y botones de la alerta (base en Styles/PixelStyles.axaml) -->
@@ -369,7 +416,9 @@
                             </ItemsControl.ItemsPanel>
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate DataType="vm:CardViewModel">
-                                    <LayoutTransformControl LayoutTransform="rotate(90deg)">
+                                    <LayoutTransformControl Classes="rivalCard"
+                                                            Classes.picking="{Binding IsPicking}"
+                                                            LayoutTransform="rotate(90deg)">
                                         <ContentControl Content="{Binding}" />
                                     </LayoutTransformControl>
                                 </DataTemplate>
@@ -403,7 +452,9 @@
                             </ItemsControl.ItemsPanel>
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate DataType="vm:CardViewModel">
-                                    <LayoutTransformControl LayoutTransform="rotate(90deg)">
+                                    <LayoutTransformControl Classes="rivalCard"
+                                                            Classes.picking="{Binding IsPicking}"
+                                                            LayoutTransform="rotate(90deg)">
                                         <ContentControl Content="{Binding}" />
                                     </LayoutTransformControl>
                                 </DataTemplate>
@@ -428,16 +479,18 @@
                     <TextBlock Classes="zoneLabel" Text="Color activo" />
                 </StackPanel>
 
-                <StackPanel>
+                <StackPanel Classes="directionIndicator"
+                            Classes.highlighted="{Binding IsDirectionHighlighted}">
                     <Viewbox Width="42" Height="42" HorizontalAlignment="Center">
                         <Canvas Classes="directionArrow"
                                 Classes.counterClockwise="{Binding IsCounterClockwise}"
                                 Width="60" Height="60">
-                            <Path Data="M 30,6 A 24,24 0 1 1 6,30"
+                            <Path Classes="arrowLine"
+                                  Data="M 30,6 A 24,24 0 1 1 6,30"
                                   Stroke="White"
                                   StrokeThickness="4"
                                   StrokeLineCap="Round" />
-                            <Path Data="M 0,32 L 6,21 L 12,32 Z" Fill="White" />
+                            <Path Classes="arrowHead" Data="M 0,32 L 6,21 L 12,32 Z" Fill="White" />
                         </Canvas>
                     </Viewbox>
                     <TextBlock Classes="zoneLabel" Text="{Binding DirectionText}" />
@@ -482,6 +535,38 @@
                     <TextBlock Classes="zoneLabel" Text="Descarte" />
                 </StackPanel>
             </Grid>
+
+            <!-- Aviso de carta especial (+2, +4, saltar o reversa): lo ven todos unos segundos, arriba
+                 de las pilas para no tapar la carta que se tiró. No bloquea los clics. -->
+            <Border Grid.Row="1" Grid.Column="1"
+                    IsVisible="{Binding IsSpecialCardNoticeOpen}"
+                    IsHitTestVisible="False"
+                    Background="#3A2213"
+                    BorderBrush="Black"
+                    BorderThickness="5"
+                    Padding="24,14"
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Top"
+                    Margin="0,4,0,0"
+                    BoxShadow="8 8 0 0 #000000">
+                <StackPanel Spacing="10">
+                    <TextBlock Classes="pixelText"
+                               FontSize="22"
+                               Foreground="#E6B400"
+                               Text="{Binding SpecialCardTitle}">
+                        <TextBlock.Effect>
+                            <DropShadowEffect OffsetX="3" OffsetY="3" BlurRadius="0" Color="Black" Opacity="1" />
+                        </TextBlock.Effect>
+                    </TextBlock>
+                    <TextBlock Classes="pixelText"
+                               FontSize="12"
+                               Text="{Binding SpecialCardDetail}">
+                        <TextBlock.Effect>
+                            <DropShadowEffect OffsetX="2" OffsetY="2" BlurRadius="0" Color="Black" Opacity="1" />
+                        </TextBlock.Effect>
+                    </TextBlock>
+                </StackPanel>
+            </Border>
 
             <!-- Botones ¡UNO!: uno por jugador, frente a sus cartas (hacia el centro de la mesa).
                  Solo aparecen durante los 2 segundos que siguen a tirar su penúltima carta.

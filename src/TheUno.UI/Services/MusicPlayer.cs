@@ -46,29 +46,13 @@ public sealed class MusicPlayer : IDisposable
         set
         {
             _isMuted = value;
-
-            try
-            {
-                if (OperatingSystem.IsWindows())
+            Control("silenciar",
+                () => { if (_volumeProvider is not null) _volumeProvider.Volume = CurrentVolume; },
+                () =>
                 {
-                    if (_volumeProvider is not null) _volumeProvider.Volume = CurrentVolume;
-                }
-                else if (OperatingSystem.IsMacOS())
-                {
-                    if (value)
-                    {
-                        StopMac();
-                    }
-                    else if (!_isPaused && _currentTrack is not null)
-                    {
-                        StartMac();
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine($"No se pudo silenciar la música: {ex.Message}");
-            }
+                    if (value) StopMac();
+                    else if (!_isPaused && _currentTrack is not null) StartMac();
+                });
         }
     }
 
@@ -110,41 +94,39 @@ public sealed class MusicPlayer : IDisposable
     public void Pause()
     {
         _isPaused = true;
-        try
-        {
-            if (OperatingSystem.IsWindows())
-            {
-                _output?.Pause();
-            }
-            else if (OperatingSystem.IsMacOS())
-            {
-                StopMac();
-            }
-        }
-        catch (Exception ex)
-        {
-            Debug.WriteLine($"No se pudo pausar la música: {ex.Message}");
-        }
+        Control("pausar", () => _output?.Pause(), StopMac);
     }
 
-    /// <summary>Sigue la canción desde donde se pausó.</summary>
+    /// <summary>Sigue la canción desde donde se pausó (en silencio, macOS la deja detenida).</summary>
     public void Resume()
     {
         _isPaused = false;
+        Control("reanudar", () => _output?.Play(), () =>
+        {
+            if (!_isMuted && _currentTrack is not null && _afplay is null) StartMac();
+        });
+    }
+
+    /// <summary>
+    /// Aplica un cambio a la canción que suena: en Windows con NAudio y en macOS controlando afplay.
+    /// Si falla, el juego sigue sin ese cambio.
+    /// </summary>
+    private void Control(string action, Action onWindows, Action onMac)
+    {
         try
         {
             if (OperatingSystem.IsWindows())
             {
-                _output?.Play();
+                onWindows();
             }
-            else if (OperatingSystem.IsMacOS() && !_isMuted && _currentTrack is not null && _afplay is null)
+            else if (OperatingSystem.IsMacOS())
             {
-                StartMac();
+                onMac();
             }
         }
         catch (Exception ex)
         {
-            Debug.WriteLine($"No se pudo reanudar la música: {ex.Message}");
+            Debug.WriteLine($"No se pudo {action} la música: {ex.Message}");
         }
     }
 

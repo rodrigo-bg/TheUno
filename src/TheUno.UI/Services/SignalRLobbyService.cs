@@ -11,9 +11,6 @@ namespace TheUno.UI.Services;
 /// </summary>
 public sealed class SignalRLobbyService : ILobbyService
 {
-    // 127.0.0.1 en lugar de localhost: en Windows localhost también intenta IPv6 y tarda más en fallar
-    private const string LocalServer = "127.0.0.1";
-
     private readonly GameConnection _connection = new();
     private List<string> _joinedPlayers = new();
     private SignalRGameSession? _session;
@@ -28,9 +25,10 @@ public sealed class SignalRLobbyService : ILobbyService
     public event Action? PlayersChanged;
     public event Action? GameStarted;
 
+    /// <summary>Se conecta al servidor de esta misma compu y abre la partida.</summary>
     public async Task CreateGameAsync()
     {
-        if (!_connection.IsConnected) await ConnectAsync(LocalServer);
+        if (!_connection.IsConnected) await ConnectAsync(ServerAddress.Local);
 
         try
         {
@@ -43,6 +41,7 @@ public sealed class SignalRLobbyService : ILobbyService
         }
     }
 
+    /// <summary>Se conecta, escucha la sala y prepara la sesión antes de que llegue la primera mesa.</summary>
     public async Task ConnectAsync(string serverIp)
     {
         await _connection.ConnectAsync(serverIp);
@@ -69,6 +68,7 @@ public sealed class SignalRLobbyService : ILobbyService
 
     public Task StartGameAsync() => _connection.InvokeAsync(HubMethods.StartGame);
 
+    /// <summary>Avisa al servidor que se va y cierra la conexión, aunque el aviso falle.</summary>
     public async Task LeaveAsync()
     {
         try

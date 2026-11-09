@@ -36,12 +36,12 @@ public sealed class SoundEffects : IDisposable
 
     // Varias cartas al mismo tiempo (un +4) se oyen como una sola, si no se suman y truenan
     private static readonly TimeSpan RepeatGap = TimeSpan.FromMilliseconds(80);
-    private readonly Dictionary<string, DateTime> _lastPlayed = new();
 
     // Formato de la mezcla: todos los sonidos se convierten a este al cargarse
     private static readonly WaveFormat MixFormat = WaveFormat.CreateIeeeFloatWaveFormat(48000, 2);
 
     private readonly float _volume;
+    private readonly Dictionary<string, DateTime> _lastPlayed = new();
 
     // Windows: cada sonido ya decodificado en memoria, para que suene al instante.
     // La salida queda abierta todo el tiempo y el mezclador suma los sonidos que estén tocando.
