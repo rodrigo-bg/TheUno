@@ -21,7 +21,8 @@ public partial class BoardViewModel : ViewModelBase
     // Tiempo que se ve el aviso de penalización por no cantar UNO
     private static readonly TimeSpan PenaltyNoticeDuration = TimeSpan.FromSeconds(2.5);
 
-    // Tiempo que se ve el aviso de una carta especial (+2, +4, saltar o reversa)
+    // Tiempo que se ve el aviso de una carta especial (+2, +4, saltar o reversa), contando el desvanecido.
+    // Debe coincidir con la animación de BoardView.axaml.
     private static readonly TimeSpan SpecialCardNoticeDuration = TimeSpan.FromSeconds(2.5);
 
     // Pausa antes de la pantalla final, para que se vea la última carta en la mesa
@@ -32,7 +33,7 @@ public partial class BoardViewModel : ViewModelBase
     private static readonly TimeSpan DirectionHighlightDuration = TimeSpan.FromSeconds(1.6);
 
     // Cada cuánto el rival en turno cambia la carta que se asoma, como si estuviera eligiendo
-    private static readonly TimeSpan PickingInterval = TimeSpan.FromMilliseconds(250);
+    private static readonly TimeSpan PickingInterval = TimeSpan.FromMilliseconds(500);
 
     // Color activo con la paleta de las cartas 8 bits; se crean una sola vez
     private static readonly IBrush NoColorBrush = new SolidColorBrush(Color.Parse("#555555"));
@@ -263,10 +264,7 @@ public partial class BoardViewModel : ViewModelBase
     {
         if (oldValue is not null) oldValue.IsActive = false;
         newValue.IsActive = true;
-
-        // Si le toca a un rival, empieza a "elegir" de inmediato, sin esperar al temporizador
         LowerPickingCard();
-        if (_pickingTimer is not null) OnPickingTick(null, EventArgs.Empty);
     }
 
     /// <summary>
@@ -349,10 +347,12 @@ public partial class BoardViewModel : ViewModelBase
     {
         if (state.TopCard.Id == _lastTopCardId) return;
 
-        // ActivePlayer todavía es quien tiró: el turno nuevo se aplica después
+        // ActivePlayer todavía es quien tiró: el turno nuevo se aplica después.
+        // En mayúsculas, igual que los nombres de la mesa.
         var victim = state.Players
             .Select(p => p.Name)
             .FirstOrDefault(name => name != ActivePlayer.Name && name != state.CurrentPlayerName)
+            ?.ToUpperInvariant()
             ?? "El siguiente";
 
         (string Title, string Detail)? notice = state.TopCard.Type switch
@@ -367,13 +367,21 @@ public partial class BoardViewModel : ViewModelBase
 
         SpecialCardTitle = notice.Value.Title;
         SpecialCardDetail = notice.Value.Detail;
-        IsSpecialCardNoticeOpen = true;
 
+        // Se quita y se vuelve a poner en el siguiente ciclo para que el desvanecido
+        // (animación de BoardView.axaml) empiece de nuevo si llega otro aviso antes de terminar
         var count = ++_specialCardNoticeCount;
-        DispatcherTimer.RunOnce(() =>
+        IsSpecialCardNoticeOpen = false;
+        Dispatcher.UIThread.Post(() =>
         {
-            if (count == _specialCardNoticeCount) IsSpecialCardNoticeOpen = false;
-        }, SpecialCardNoticeDuration);
+            if (count != _specialCardNoticeCount) return;
+            IsSpecialCardNoticeOpen = true;
+
+            DispatcherTimer.RunOnce(() =>
+            {
+                if (count == _specialCardNoticeCount) IsSpecialCardNoticeOpen = false;
+            }, SpecialCardNoticeDuration);
+        });
     }
 
     /// <summary>

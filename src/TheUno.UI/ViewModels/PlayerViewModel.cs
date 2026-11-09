@@ -41,6 +41,9 @@ public partial class PlayerViewModel : ViewModelBase
 
     public string Name { get; }
 
+    /// <summary>Nombre como se ve en la mesa, en mayúsculas (ej. "TONA").</summary>
+    public string DisplayName => Name.ToUpperInvariant();
+
     public ObservableCollection<CardViewModel> Hand { get; } = new();
 
     /// <summary>
