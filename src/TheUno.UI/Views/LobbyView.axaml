@@ -171,6 +171,16 @@
         <Style Selector="Button.startGame:pointerover /template/ ContentPresenter#PART_ContentPresenter">
             <Setter Property="Background" Value="#FF4040" />
         </Style>
+        <!-- Cambiar de jugador desde la sala (regresa al selector) -->
+        <Style Selector="Button.changePlayer">
+            <Setter Property="Background" Value="#0020FF" />
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="Padding" Value="16,14" />
+            <Setter Property="HorizontalAlignment" Value="Center" />
+        </Style>
+        <Style Selector="Button.changePlayer:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="#4060FF" />
+        </Style>
         <Style Selector="Button.startGame:disabled /template/ ContentPresenter#PART_ContentPresenter">
             <Setter Property="Background" Value="#555555" />
             <Setter Property="Foreground" Value="#999999" />
@@ -274,6 +284,10 @@
                            Classes.error="{Binding IsStatusError}"
                            Text="{Binding StatusMessage}"
                            IsVisible="{Binding StatusMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+
+                <Button Classes="pixelButton changePlayer"
+                        Content="CAMBIAR JUGADOR"
+                        Command="{Binding ChangePlayerCommand}" />
 
                 <Button Classes="pixelButton startGame"
                         Content="INICIAR JUEGO"

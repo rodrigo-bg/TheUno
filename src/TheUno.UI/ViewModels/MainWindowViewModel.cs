@@ -55,13 +55,15 @@ public partial class MainWindowViewModel : ViewModelBase
 
     /// <summary>
     /// Crear o unirse a partida: cada vez es una sala nueva. Al volver a jugar se regresa aquí
-    /// con el mismo papel (quien creó la partida la vuelve a crear; quien se unió se reconecta a la misma IP).
+    /// con el mismo papel (quien creó la partida la vuelve a crear; quien se unió se reconecta a la misma IP)
+    /// y con el mismo jugador, así entra directo a la sala.
     /// </summary>
-    private void ShowLobby(bool isHost, string? reconnectIp = null)
+    private void ShowLobby(bool isHost, string? reconnectIp = null, string? rejoinPlayer = null)
     {
         LobbyViewModel? lobby = null;
         lobby = new LobbyViewModel(_createLobby?.Invoke(), isHost, ShowPlayOptions,
-            _ => StartGame(lobby!, () => ShowLobby(isHost, lobby!.ServerIp)), reconnectIp);
+            _ => StartGame(lobby!, () => ShowLobby(isHost, lobby!.ServerIp, lobby!.MyPlayerName)),
+            reconnectIp, rejoinPlayer);
         CurrentView = lobby;
     }
 

@@ -34,11 +34,15 @@ public partial class LobbyViewModel : ViewModelBase
     // La sesión cuya conexión se está vigilando mientras se espera en la sala
     private IGameSession? _watchedSession;
 
+    // Al volver a jugar, el jugador de la partida anterior: se elige solo en cuanto se puede
+    private string? _rejoinPlayer;
+
     /// <summary>Se está esperando al servidor: los botones no responden para no mandar dos veces.</summary>
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(ConnectCommand))]
     [NotifyCanExecuteChangedFor(nameof(ChoosePlayerCommand))]
     [NotifyCanExecuteChangedFor(nameof(StartGameCommand))]
+    [NotifyCanExecuteChangedFor(nameof(ChangePlayerCommand))]
     private bool _isBusy;
 
     /// <summary>Quien se une ya se conectó al servidor: puede elegir jugador.</summary>
@@ -77,12 +81,17 @@ public partial class LobbyViewModel : ViewModelBase
     /// <param name="reconnectIp">
     /// Al volver a jugar, la IP a la que ya estaba unido: se conecta solo y pasa directo a elegir jugador.
     /// </param>
+    /// <param name="rejoinPlayer">
+    /// Al volver a jugar, el jugador con el que jugó: se elige solo y entra directo a la sala.
+    /// Si ya lo tomó alguien más, se queda en el selector para elegir otro.
+    /// </param>
     public LobbyViewModel(ILobbyService? lobby, bool isHost, Action goToMenu, Action<string> onGameStarted,
-        string? reconnectIp = null)
+        string? reconnectIp = null, string? rejoinPlayer = null)
     {
         _lobby = lobby;
         _goToMenu = goToMenu;
         _onGameStarted = onGameStarted;
+        _rejoinPlayer = rejoinPlayer;
         IsHost = isHost;
         LocalIp = isHost ? NetworkInfo.GetLocalIPv4() ?? "SIN RED" : string.Empty;
         PlayerOptions = new ObservableCollection<PlayerOption>(PlayerNames.Select(n => new PlayerOption(n)));
@@ -100,6 +109,10 @@ public partial class LobbyViewModel : ViewModelBase
         {
             ServerIp = reconnectIp;
             ConnectCommand.Execute(null);
+        }
+        else if (isHost)
+        {
+            RejoinPreviousPlayer();
         }
     }
 
@@ -153,6 +166,24 @@ public partial class LobbyViewModel : ViewModelBase
         {
             IsBusy = false;
         }
+
+        if (IsConnected) RejoinPreviousPlayer();
+    }
+
+    /// <summary>Al volver a jugar, elige solo el jugador de la partida anterior (una sola vez).</summary>
+    private void RejoinPreviousPlayer()
+    {
+        var option = PlayerOptions.FirstOrDefault(o => o.Name == _rejoinPlayer);
+        _rejoinPlayer = null;
+        if (option is null) return;
+
+        if (option.IsTaken)
+        {
+            ShowStatus("Tu jugador anterior ya lo eligió alguien más", isError: true);
+            return;
+        }
+
+        ChoosePlayerCommand.Execute(option);
     }
 
     private bool CanConnect() => !IsBusy && !string.IsNullOrWhiteSpace(ServerIp);
@@ -170,8 +201,9 @@ public partial class LobbyViewModel : ViewModelBase
         {
             if (_lobby is not null)
             {
-                // Quien crea la partida la abre al elegir su jugador, así ya tiene nombre al entrar a la sala
-                if (IsHost)
+                // Quien crea la partida la abre al elegir su jugador, así ya tiene nombre al entrar a la sala.
+                // Si solo está cambiando de jugador, la partida ya está abierta.
+                if (IsHost && MyPlayerName is null)
                 {
                     await _lobby.CreateGameAsync();
                     WatchConnection();
@@ -209,6 +241,19 @@ public partial class LobbyViewModel : ViewModelBase
     }
 
     private bool CanChoosePlayer(PlayerOption? option) => !IsBusy;
+
+    /// <summary>
+    /// Desde la sala, regresa al selector para elegir otro jugador. Mientras tanto se conserva el actual;
+    /// el servidor lo libera cuando se elige el nuevo (o se vuelve a elegir el mismo).
+    /// </summary>
+    [RelayCommand(CanExecute = nameof(CanChangePlayer))]
+    private void ChangePlayer()
+    {
+        StatusMessage = string.Empty;
+        IsInRoom = false;
+    }
+
+    private bool CanChangePlayer() => !IsBusy;
 
     // ---------- Conexión ----------
 
@@ -249,9 +294,10 @@ public partial class LobbyViewModel : ViewModelBase
         var joined = _lobby?.JoinedPlayers
                      ?? (MyPlayerName is null ? Array.Empty<string>() : new[] { MyPlayerName });
 
+        // El jugador propio no cuenta como ocupado: al cambiar de jugador se puede volver a elegir
         foreach (var option in PlayerOptions)
         {
-            option.IsTaken = joined.Contains(option.Name);
+            option.IsTaken = joined.Contains(option.Name) && option.Name != MyPlayerName;
         }
 
         for (var i = 0; i < RoomSlots.Count; i++)
