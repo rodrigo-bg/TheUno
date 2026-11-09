@@ -582,6 +582,7 @@ public partial class BoardViewModel : ViewModelBase
     private void LeaveInBackground()
     {
         CloseUnoWindow();
+        StopPickingAnimation();
         if (_session is null) return;
 
         _session.StateChanged -= ApplyState;
